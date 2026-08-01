@@ -31,8 +31,8 @@ export default function Landing() {
           Autonomous support agent for Superworks HRMS
         </span>
         <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-6xl">
-          AI{' '}
-          <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Syndicate</span>
+          Help
+          <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Sense</span>
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
           Ek problem, ek ticket, ek fix — <strong>24/7, zero wait, zero duplicate.</strong>

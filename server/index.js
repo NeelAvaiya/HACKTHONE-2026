@@ -11,9 +11,11 @@ import { uploads } from './uploads.js'
 import { releaseNotes } from './releases.js'
 import { makeVision } from './vision.js'
 import { availability, toMinutes } from './availability.js'
+import { work } from './work.js'
 import { tickets as seedTickets } from '../src/data/tickets.js'
 import { team as seedTeam } from '../src/data/team.js'
 import { releases as seedReleases } from '../src/data/releases.js'
+import { clientWorkSeed as seedWork } from '../src/data/clientWork.js'
 
 const app = express()
 app.use(cors())
@@ -23,7 +25,8 @@ app.use(express.json({ limit: '5mb' }))
 app.use('/api', store)
 app.use('/api', releaseNotes)
 app.use('/api', availability)
-await connectDB(seedTickets, seedTeam, seedReleases)
+app.use('/api', work)
+await connectDB(seedTickets, seedTeam, seedReleases, seedWork)
 
 const PORT = process.env.PORT || 3001
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
@@ -33,9 +36,9 @@ const API_KEYS = [process.env.GEMINI_API_KEY, process.env.GEMINI_API_KEY_BACKUP]
 // Bumped whenever SYSTEM_PROMPT changes meaningfully. Cached answers written under
 // an older version are ignored, so the DB cache can't serve pre-change replies
 // (e.g. the old English-only answers) straight past the current prompt.
-const PROMPT_VERSION = 3
+const PROMPT_VERSION = 4
 
-const BASE_PROMPT = `You are AI Syndicate, the 24/7 support agent for Superworks, a B2B HRMS/payroll SaaS used by Indian companies.
+const BASE_PROMPT = `You are HelpSense, the 24/7 support agent for Superworks, a B2B HRMS/payroll SaaS used by Indian companies.
 Be warm and practical. Keep answers to 2-4 short sentences.
 
 LANGUAGE: Reply in the SAME language the user wrote in.
@@ -215,6 +218,6 @@ async function callGemini(key, model, contents) {
 }
 
 app.listen(PORT, () => {
-  console.log(`AI Syndicate API proxy running on http://localhost:${PORT}`)
+  console.log(`HelpSense API proxy running on http://localhost:${PORT}`)
   if (!API_KEYS.length) console.warn('⚠ No GEMINI_API_KEY in .env — chat will use fallback replies')
 })

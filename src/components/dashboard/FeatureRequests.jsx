@@ -9,7 +9,7 @@ export default function FeatureRequests() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <StatCard value="142" label="Duplicates merged this quarter" sub="auto-detected by AI Syndicate" />
+        <StatCard value="142" label="Duplicates merged this quarter" sub="auto-detected by HelpSense" />
         <StatCard value="~60%" label="Product-team capacity saved" sub="no manual triage of repeat requests" />
       </div>
       <Card className="divide-y divide-slate-100">

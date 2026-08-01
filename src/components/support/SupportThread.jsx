@@ -1,10 +1,10 @@
 // WhatsApp-style conversation for one appointment on the support side (props-only)
-import { CheckCircle2, Link2, Video } from 'lucide-react'
+import { CheckCircle2, Video } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import MessageBubble from '../chat/MessageBubble.jsx'
 import { meetingSummary } from '../../utils/meetingSummary.js'
 
-export default function SupportThread({ appt, copy, onDone, onMerge, onKeepSeparate }) {
+export default function SupportThread({ appt, copy, onDone }) {
   const { expert: first, discussed, nextSteps } = meetingSummary(appt, copy)
   const bookingText = `🔔 **New booking · ${appt.id}**\n${first}, this slot has been booked for you!\n\n🗓 ${appt.slot} · ${appt.category} query\n🎥 ${copy.meetLink} · with ${appt.client}`
   const bullets = (lines) => lines.map((l) => `• ${l}`).join('\n')
@@ -34,38 +34,7 @@ export default function SupportThread({ appt, copy, onDone, onMerge, onKeepSepar
 
         <MessageBubble from="bot" text={bookingText} time={appt.createdAt} />
 
-        {appt.mergedClients && (
-          <div className="flex justify-center py-1">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-[11px] font-semibold text-violet-700 shadow-sm ring-1 ring-violet-200">
-              <Link2 size={11} /> {appt.mergedClients.length} clients merged into one ticket:{' '}
-              {appt.mergedClients.map((c) => c.split(' ')[0]).join(' + ')}
-            </span>
-          </div>
-        )}
-
-        {appt.duplicateOf && (
-          <div className="ticket-slide-in ml-2 max-w-sm rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 shadow-sm">
-            <p className="text-xs font-semibold text-amber-800">
-              {copy.apptDuplicateBanner.replace('{id}', appt.duplicateOf).replace('{client}', appt.client.split(' ')[0])}
-            </p>
-            <div className="mt-2 flex gap-2">
-              <button
-                onClick={() => onMerge(appt)}
-                className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-slate-700"
-              >
-                Merge into one ticket
-              </button>
-              <button
-                onClick={() => onKeepSeparate(appt)}
-                className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition-colors hover:bg-slate-100"
-              >
-                Keep separate
-              </button>
-            </div>
-          </div>
-        )}
-
-        {appt.status === 'upcoming' && !appt.duplicateOf && (
+        {appt.status === 'upcoming' && (
           <div className="flex flex-wrap gap-2 pl-2">
             <Link
               to={`/support/meeting/${appt.id}`}

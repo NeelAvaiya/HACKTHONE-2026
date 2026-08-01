@@ -6,7 +6,7 @@ const DB_NAME = process.env.MONGO_DB || 'HEKATHONE'
 
 let db = null
 
-export async function connectDB(seedTickets = [], seedTeam = [], seedReleases = []) {
+export async function connectDB(seedTickets = [], seedTeam = [], seedReleases = [], seedWork = []) {
   try {
     const client = new MongoClient(URL, { serverSelectionTimeoutMS: 2500 })
     await client.connect()
@@ -28,6 +28,12 @@ export async function connectDB(seedTickets = [], seedTeam = [], seedReleases = 
     if (!releaseCount && seedReleases.length) {
       await db.collection('releases').insertMany(seedReleases.map((r) => ({ ...r })))
       console.log(`🗄  Seeded ${seedReleases.length} release notes into ${DB_NAME}.releases`)
+    }
+    // The client's tickets and feature requests, shared by both sides
+    const workCount = await db.collection('work').countDocuments()
+    if (!workCount && seedWork.length) {
+      await db.collection('work').insertMany(seedWork.map((w) => ({ ...w })))
+      console.log(`🗄  Seeded ${seedWork.length} work items into ${DB_NAME}.work`)
     }
     // Cache lookups are keyed by question AND language — same question asked in
     // Hindi and English are two different cached answers

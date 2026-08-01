@@ -1,12 +1,13 @@
 // "/support" — support-side layout: sub-tabs (Inbox / Dashboard / Metrics) render below
 import { NavLink, Outlet } from 'react-router-dom'
-import { Inbox, LayoutDashboard, BarChart3, CalendarDays } from 'lucide-react'
+import { Inbox, LayoutDashboard, BarChart3, CalendarDays, Ticket } from 'lucide-react'
 
 // Reviews are not a tab here — they are a section inside the Dashboard, the one
 // place that shows both sides' feedback together
 const tabs = [
   { to: '/support', label: 'Inbox', icon: Inbox, end: true },
   { to: '/support/calendar', label: 'Calendar', icon: CalendarDays },
+  { to: '/support/client-work', label: 'Client Work', icon: Ticket },
   { to: '/support/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/support/metrics', label: 'Metrics', icon: BarChart3 },
 ]

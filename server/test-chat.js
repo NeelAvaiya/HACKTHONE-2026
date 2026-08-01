@@ -10,7 +10,7 @@ rl.on('close', () => {
   closed = true
 })
 
-console.log('AI Syndicate test chat — type a question, or "exit" to quit.\n')
+console.log('HelpSense test chat — type a question, or "exit" to quit.\n')
 
 function ask() {
   if (closed) return

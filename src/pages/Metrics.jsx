@@ -18,7 +18,7 @@ const CHART = [
 ]
 const SERIES = [
   { key: 'before', name: 'Before', color: '#d97706' },
-  { key: 'after', name: 'After AI Syndicate', color: '#2563eb' },
+  { key: 'after', name: 'After HelpSense', color: '#2563eb' },
 ]
 
 // Eased 0→1 progress that drives both the count-ups and the bar heights
@@ -44,7 +44,7 @@ export default function Metrics() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-12">
       <h2 className="text-2xl font-bold text-slate-900">Impact</h2>
-      <p className="mt-1 text-sm text-slate-500">What AI Syndicate changes for the support team.</p>
+      <p className="mt-1 text-sm text-slate-500">What HelpSense changes for the support team.</p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {STATS.map((s) => (
@@ -59,7 +59,7 @@ export default function Metrics() {
 
       <Card className="mt-6 p-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-bold text-slate-900">Before vs after AI Syndicate</h3>
+          <h3 className="text-sm font-bold text-slate-900">Before vs after HelpSense</h3>
           <div className="flex gap-4">
             {SERIES.map((s) => (
               <span key={s.key} className="flex items-center gap-1.5 text-xs text-slate-600">

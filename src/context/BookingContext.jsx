@@ -11,11 +11,6 @@ const api = (path, method, body) =>
     body: JSON.stringify(body),
   }).catch(() => {})
 
-const nextId = (appointments) => {
-  const nums = appointments.map((a) => parseInt((a.id || '').replace(/\D/g, ''), 10) || 0)
-  return `APT-${Math.max(1000, ...nums) + 1}`
-}
-
 export function BookingProvider({ children }) {
   const [appointments, setAppointments] = useState([])
 
@@ -24,8 +19,7 @@ export function BookingProvider({ children }) {
     fetch('/api/appointments')
       .then((r) => r.json())
       .then((data) => {
-        // merged duplicates stay in the DB for the record but are hidden from the inbox
-        if (Array.isArray(data)) setAppointments(data.filter((a) => a.status !== 'merged'))
+        if (Array.isArray(data)) setAppointments(data)
       })
       .catch(() => {})
   }
@@ -81,52 +75,9 @@ export function BookingProvider({ children }) {
     api(`/appointments/${id}`, 'PATCH', { [`reviews.${side}`]: review })
   }
 
-  // Demo: another client raises the same question — a duplicate booking slides in,
-  // then gets flagged as a match with the original 1s later
-  function simulateDuplicate() {
-    const target = appointments.find((a) => !a.duplicateOf)
-    if (!target || appointments.some((a) => a.duplicateOf)) return
-    // Deliberately bypasses /appointments/book: this demo NEEDS the colliding
-    // slot that the freshness check exists to prevent.
-    const dup = {
-      id: nextId(appointments),
-      person: target.person,
-      slot: target.slot,
-      date: target.date,
-      time: target.time,
-      category: target.category,
-      client: 'Meera Iyer (Nexara Tech)',
-      status: 'upcoming',
-      notified: true,
-      createdAt: new Date().toISOString(),
-    }
-    setAppointments((prev) => [{ ...dup, incoming: true }, ...prev])
-    api('/appointments', 'POST', dup)
-    setTimeout(() => {
-      setAppointments((prev) => prev.map((a) => (a.id === dup.id ? { ...a, duplicateOf: target.id } : a)))
-    }, 1000)
-  }
-
-  // Merge: duplicate is removed, original becomes one ticket linked to both clients
-  function mergeAppointments(dupId, intoId) {
-    setAppointments((prev) => {
-      const dup = prev.find((a) => a.id === dupId)
-      const mergedClients = [prev.find((a) => a.id === intoId)?.client, dup?.client].filter(Boolean)
-      api(`/appointments/${intoId}`, 'PATCH', { mergedClients })
-      api(`/appointments/${dupId}`, 'PATCH', { status: 'merged', mergedInto: intoId })
-      return prev
-        .filter((a) => a.id !== dupId)
-        .map((a) => (a.id === intoId ? { ...a, mergedClients } : a))
-    })
-  }
-
-  function keepSeparateAppt(dupId) {
-    setAppointments((prev) => prev.map((a) => (a.id === dupId ? { ...a, duplicateOf: null } : a)))
-  }
-
   return (
     <BookingContext.Provider
-      value={{ appointments, book, cancel, complete, markNotified, submitReview, simulateDuplicate, mergeAppointments, keepSeparateAppt, reload }}
+      value={{ appointments, book, cancel, complete, markNotified, submitReview, reload }}
     >
       {children}
     </BookingContext.Provider>

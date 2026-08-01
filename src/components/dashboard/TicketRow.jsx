@@ -22,7 +22,7 @@ export default function TicketRow({ ticket, onMerge, onKeepSeparate }) {
             <p className="truncate text-sm font-medium text-slate-900">{ticket.title}</p>
             {ticket.createdBy === 'bot' && (
               <span className="shrink-0 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-600 ring-1 ring-violet-200">
-                🤖 created by AI Syndicate
+                🤖 created by HelpSense
               </span>
             )}
           </div>
