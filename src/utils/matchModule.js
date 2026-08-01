@@ -4,11 +4,14 @@ import { categories } from '../data/team.js'
 
 export const MODULE_CHIPS = categories.map((c) => c.key)
 
+// Aliases cover all three languages in Latin script, so "salary", "vetan" and
+// "tankhwah" all land on Payroll. The module keys are product menu names and
+// stay in English.
 const MODULE_ALIASES = {
-  Payroll: ['payroll', 'salary', 'payslip', 'pf', 'compliance', 'tax'],
-  HRMS: ['hrms', 'attendance', 'leave', 'shift', 'onboarding', 'hr'],
-  PMS: ['pms', 'performance', 'appraisal', 'goal', 'review'],
-  Other: ['other', 'login', 'mobile', 'app', 'integration', 'sso', 'platform'],
+  Payroll: ['payroll', 'salary', 'payslip', 'pf', 'compliance', 'tax', 'vetan', 'tankhwah'],
+  HRMS: ['hrms', 'attendance', 'leave', 'shift', 'onboarding', 'hr', 'chhutti', 'chutti', 'haazri', 'hazri'],
+  PMS: ['pms', 'performance', 'appraisal', 'goal', 'review', 'mulyankan'],
+  Other: ['other', 'login', 'mobile', 'app', 'integration', 'sso', 'platform', 'anya'],
 }
 
 export function matchModule(text) {

@@ -123,12 +123,52 @@ export const botScripts = {
   reviewOptions: ['😍 Great', '🙂 Okay', '😕 Poor'],
   reviewStarsLabel: 'Overall rating',
   reviewSubmitLabel: 'Submit review',
+
+  // Shared review page (both sides)
+  reviewCtaLabel: '⭐ Give your review',
+  reviewViewLabel: '⭐ View reviews',
+  reviewPageTitle: 'How did the meeting go?',
+  reviewPageDone: 'Thanks — your review is in.',
+  reviewWaiting: 'Waiting for {name} to submit their review.',
+  reviewNotReady: 'This review opens once the meeting is marked complete.',
+  reviewBackClient: 'Back to chat',
+  reviewBackSupport: 'Back to inbox',
+  reviewsTabEmpty: 'No completed meetings yet. Reviews appear here after a call is marked done.',
+
+  // Client-side "My meetings" page
+  meetingsIntro: 'Your booked calls, and the summary and review for each one once it is done.',
+  meetingsEmpty: 'No completed meetings yet. After a call, the summary and your review appear here.',
   reviewThanks: 'Thank you for the feedback! ⭐ It helps us make AI Syndicate better.',
 
   // When the help docs don't cover a question → route to appointment booking
   notCovered:
     "Hmm, my help docs don't have an exact answer for that — our support team can explain it properly. 🙋 Book an appointment and an expert will walk you through it on a call.",
   bookCtaLabel: '📅 Book an appointment',
+  joinLabel: 'Join meeting', // support-side button that opens the call page
+
+  // Greetings and pleasantries — answered locally, never routed to booking.
+  // These are the bot ANSWERING, so they mirror the client's language. Every
+  // other string in this file stays English; only replies mirror.
+  smallTalk: {
+    en: {
+      greeting: "Hi! I'm AI Syndicate, your Superworks support assistant. What can I help you with?",
+      howAreYou: "Doing well, thanks for asking! I'm here whenever you need help with Superworks.",
+      thanks: 'Happy to help! Anything else I can look at?',
+      bye: 'Take care! Message me any time you need a hand.',
+    },
+    hi: {
+      greeting: 'Namaste! Main AI Syndicate hoon, aapka Superworks sahayak. Bataiye, kaise madad karoon?',
+      howAreYou: 'Main bilkul theek hoon, poochne ke liye dhanyavaad! Aapki madad ke liye main yahin hoon.',
+      thanks: 'Madad karke khushi hui! Aur kuch dekhoon?',
+      bye: 'Apna dhyan rakhiye! Jab bhi zaroorat ho, sandesh bhej dijiye.',
+    },
+    hinglish: {
+      greeting: 'Hi! Main AI Syndicate hoon, aapka Superworks support assistant. Bataiye, kaise help karoon?',
+      howAreYou: 'Main bilkul theek hoon, poochne ke liye thanks! Kisi bhi help ke liye main yahin hoon.',
+      thanks: 'Khushi hui help karke! Aur kuch dekhoon?',
+      bye: 'Apna dhyan rakhiye! Kabhi bhi zaroorat ho to message kar dijiye.',
+    },
+  },
 
   // Closing lines
   resolved: 'Great! Marking this as resolved. Have a nice day!',

@@ -66,6 +66,57 @@ body {
   transform-origin: bottom left;
 }
 
+/* Google Meet look for the support-side call page */
+.meet-font {
+  font-family: 'Google Sans', Roboto, 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+/* Speaking indicator: three bars that bounce like a live audio meter.
+   This is the one animated element on the page — it encodes who is talking. */
+@keyframes meet-bar {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+.meet-bar {
+  animation: meet-bar 0.6s ease-in-out infinite;
+  transform-origin: center;
+}
+.meet-bar:nth-child(2) { animation-delay: 0.15s; }
+.meet-bar:nth-child(3) { animation-delay: 0.3s; }
+
+/* Soft halo around the active speaker's tile */
+@keyframes meet-halo {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(52, 168, 83, 0.9); }
+  50% { box-shadow: 0 0 0 6px rgba(52, 168, 83, 0.45); }
+}
+.meet-speaking {
+  animation: meet-halo 1.6s ease-in-out infinite;
+}
+
+/* Each caption line fades up as it is spoken */
+@keyframes meet-caption {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.meet-caption {
+  animation: meet-caption 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meet-bar,
+  .meet-speaking,
+  .meet-caption,
+  .ticket-slide-in,
+  .success-pop,
+  .emoji-pop,
+  .page-fade {
+    animation: none;
+  }
+  .meet-speaking {
+    box-shadow: 0 0 0 3px rgba(52, 168, 83, 0.9);
+  }
+}
+
 /* Gentle fade when switching pages */
 @keyframes page-fade {
   0% { opacity: 0; transform: translateY(4px); }

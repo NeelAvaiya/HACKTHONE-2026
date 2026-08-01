@@ -2,22 +2,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { botScripts } from '../data/botScripts.js'
 import { team } from '../data/team.js'
-import { matchIntent } from '../utils/matchIntent.js'
+import { matchIntent, matchSmallTalk } from '../utils/matchIntent.js'
 import { parseSlot, looksLikeBooking } from '../utils/parseSlot.js'
 import { matchModule, MODULE_CHIPS } from '../utils/matchModule.js'
+import { resolveLanguage } from '../utils/detectLanguage.js'
+import { meetingSummaryText } from '../utils/meetingSummary.js'
 import { askGemini } from '../utils/askGemini.js'
 import { useTickets } from '../context/TicketContext.jsx'
 import { useBookings } from '../context/BookingContext.jsx'
-
-// Client-side text of the dummy meeting summary (support side sees the card version)
-function summaryText(appt) {
-  const first = appt.person.split(' ')[0]
-  const discussed = botScripts.meetingSummary.discussed.map((d) => `• ${d}`).join('\n')
-  const steps = botScripts.meetingSummary.nextSteps
-    .map((s) => `• ${s.replace('{expert}', first)}`)
-    .join('\n')
-  return `📋 **Meeting Summary** — your call with ${first} is complete ✅\n\n**Discussed:**\n${discussed}\n\n**Next steps:**\n${steps}`
-}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const thinkTime = () => 800 + Math.random() * 700
@@ -34,7 +26,7 @@ const offerLabel = (offer) => `${offer.time} — ${offer.person}`
 
 export function useChatBot() {
   const { tickets, addTicket } = useTickets()
-  const { appointments, book, cancel, markNotified, submitReview } = useBookings()
+  const { appointments, book, cancel, markNotified } = useBookings()
   const [messages, setMessages] = useState([
     // bookCta on the greeting keeps "Book an appointment" one click away from message one
     { id: 1, from: 'bot', text: botScripts.greeting, time: new Date(), bookCta: true },
@@ -45,6 +37,10 @@ export function useChatBot() {
   const logRef = useRef([]) // plain {from, text} history sent to the Gemini proxy
   const flowRef = useRef({ stage: null, description: '', module: null, forceP1: false })
   const loadedRef = useRef(false)
+  // Language the client is writing in, updated only by typed messages that carry
+  // a signal. Chip taps and bare replies like "9" leave it alone, so a Hindi
+  // conversation doesn't flip to English mid-booking.
+  const langRef = useRef('en')
 
   // Restore the persisted conversation on mount — refresh no longer clears the chat
   useEffect(() => {
@@ -91,8 +87,8 @@ export function useChatBot() {
       .forEach((a) => {
         deliveredRef.current.add(a.id)
         markNotified(a.id)
-        push({ from: 'bot', text: summaryText(a) })
-        push({ from: 'bot', text: botScripts.reviewIntro, reviewFor: a.id })
+        push({ from: 'bot', text: meetingSummaryText(a) })
+        push({ from: 'bot', text: botScripts.reviewIntro, reviewCta: a.id })
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments])
@@ -334,6 +330,13 @@ export function useChatBot() {
     if (flowRef.current.stage) {
       flowRef.current = { stage: null, description: '', module: null, forceP1: false }
     }
+    // "Hi", "namaste", "thanks" — answer it, never route it to a booking
+    const chat = matchSmallTalk(text)
+    if (chat) {
+      const lines = botScripts.smallTalk[langRef.current] || botScripts.smallTalk.en
+      return botSay({ text: lines[chat] })
+    }
+
     const intent = matchIntent(text)
 
     // Booking request: use the time if one was given, otherwise go straight to modules.
@@ -356,7 +359,7 @@ export function useChatBot() {
       await startTicketFlow(intent, text)
     } else {
       setIsTyping(true)
-      const { reply, covered } = await askGemini(text, logRef.current.slice(0, -1))
+      const { reply, covered } = await askGemini(text, logRef.current.slice(0, -1), langRef.current)
       setIsTyping(false)
       if (covered) {
         push({ from: 'bot', text: reply })
@@ -370,6 +373,8 @@ export function useChatBot() {
   function sendMessage(text) {
     const clean = text.trim()
     if (!clean || isTyping) return
+    // Only typed messages can change the language, and only when they carry a signal
+    langRef.current = resolveLanguage(langRef.current, clean)
     // Typed input retires any pending chips so old choices can't fire later
     setMessages((prev) => prev.map((m) => (m.chips ? { ...m, chips: null } : m)))
     push({ from: 'user', text: clean })
@@ -398,13 +403,6 @@ export function useChatBot() {
     }
   }
 
-  // Client submits the post-meeting review from inside the chat
-  function sendReview(apptId, review) {
-    setMessages((prev) => prev.map((m) => (m.reviewFor ? { ...m, reviewFor: null } : m)))
-    submitReview(apptId, 'client', review)
-    push({ from: 'user', text: `${'★'.repeat(review.stars)}${'☆'.repeat(5 - review.stars)} — review submitted` })
-    botSay({ text: botScripts.reviewThanks })
-  }
-
-  return { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot, sendReview }
+  // Reviewing happens on /review/:id/client now — the chat only links to it
+  return { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot }
 }

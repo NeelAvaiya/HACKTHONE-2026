@@ -2,13 +2,16 @@
 // covered:false means the help docs don't answer this → offer appointment booking
 import { botScripts } from '../data/botScripts.js'
 
-export async function askGemini(message, history = []) {
+// lang is the language the client is writing in ('en' | 'hi' | 'hinglish') —
+// the reply comes back in that language.
+export async function askGemini(message, history = [], lang = 'en') {
   try {
     const r = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message,
+        lang,
         // Only send what the API needs (drop chips/cards/etc.)
         history: history.map((m) => ({ from: m.from, text: m.text })),
       }),

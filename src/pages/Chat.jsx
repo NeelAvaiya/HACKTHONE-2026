@@ -14,8 +14,7 @@ const otherChats = [
 ]
 
 export default function Chat() {
-  const { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot, sendReview } =
-    useChatBot()
+  const { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot } = useChatBot()
   const last = messages[messages.length - 1]
   const [search, setSearch] = useState('')
   const q = search.trim().toLowerCase()
@@ -25,7 +24,8 @@ export default function Chat() {
   )
 
   return (
-    <main className="wa-font mx-auto h-[calc(100vh-3.5rem)] max-w-[1600px]">
+    // 6.5rem = the 3.5rem navbar plus the client tab row, matching the support inbox
+    <main className="wa-font mx-auto h-[calc(100vh-6.5rem)] max-w-[1600px]">
       <div className="flex h-full">
         <aside className="hidden w-[30%] min-w-[18rem] max-w-sm flex-col border-r border-black/10 bg-white md:flex">
           <div className="bg-[#f0f2f5] px-4 py-3">
@@ -90,13 +90,7 @@ export default function Chat() {
             onChangeSlot={changeSlot}
             bookCtaLabel={botScripts.bookCtaLabel}
             changeSlotLabel={botScripts.booking.changeSlot}
-            reviewConfig={{
-              questions: botScripts.reviewQuestions,
-              options: botScripts.reviewOptions,
-              starsLabel: botScripts.reviewStarsLabel,
-              submitLabel: botScripts.reviewSubmitLabel,
-            }}
-            onReviewSubmit={sendReview}
+            reviewCtaLabel={botScripts.reviewCtaLabel}
           />
         </section>
       </div>
