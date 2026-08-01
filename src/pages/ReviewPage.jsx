@@ -7,7 +7,7 @@ import { useBookings } from '../context/BookingContext.jsx'
 import { botScripts } from '../data/botScripts.js'
 import Card from '../components/common/Card.jsx'
 import ReviewForm from '../components/booking/ReviewForm.jsx'
-import ReviewSummary from '../components/booking/ReviewSummary.jsx'
+import ReviewBlock from '../components/booking/ReviewBlock.jsx'
 
 const SIDES = ['client', 'support']
 // "Rohit Verma (FinEdge Solutions)" -> "Rohit Verma"
@@ -32,8 +32,9 @@ export default function ReviewPage() {
   const mine = appt.reviews?.[side]
   const back = () => navigate(side === 'client' ? '/chat' : '/support', { state: { appointmentId: appt.id } })
 
-  const ratings = [appt.reviews?.client?.stars, appt.reviews?.support?.stars].filter((n) => typeof n === 'number')
-  const average = ratings.length ? Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10 : null
+  // Deliberately your own rating, not an average of both — an average would let
+  // each side work out what the other gave.
+  const myStars = mine?.stars ?? null
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
@@ -56,10 +57,10 @@ export default function ReviewPage() {
               </h2>
               <p className="mt-1 text-xs text-slate-400">{appt.slot}</p>
             </div>
-            {average !== null && (
+            {myStars !== null && (
               <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold">
                 <Star size={14} className="fill-amber-400 text-amber-400" />
-                {average.toFixed(1)}
+                {myStars}/5
               </span>
             )}
           </div>
@@ -71,13 +72,9 @@ export default function ReviewPage() {
           ) : mine ? (
             <>
               <p className="mb-3 text-sm font-semibold text-emerald-700">{botScripts.reviewPageDone}</p>
-              <ReviewSummary
-                reviews={appt.reviews || {}}
-                side={side}
-                clientName={clientName}
-                expertName={expertName}
-                waitingText={botScripts.reviewWaiting}
-              />
+              {/* Only ever the reviewer's own feedback — the other side's stays
+                  private to them, and is pooled on the support Dashboard */}
+              <ReviewBlock title="Your review" review={mine} />
             </>
           ) : (
             <>
