@@ -1,10 +1,33 @@
 // "Files" tab: every attachment in the thread, newest first, searchable
 import { useState } from 'react'
-import { FileText, FileSpreadsheet, FileArchive, FileVideo, FileAudio, File, Download, Search, CornerUpLeft, Trash2 } from 'lucide-react'
+import { FileText, FileSpreadsheet, FileArchive, FileVideo, FileAudio, File, Download, Search, CornerUpLeft, Trash2, ImageOff } from 'lucide-react'
 import { formatBytes, fileKind, isImage, KIND_STYLE, downloadUrl } from '../../utils/fileMeta.js'
 import { formatClock } from '../../utils/formatTime.js'
 
 const ICONS = { pdf: FileText, doc: FileText, sheet: FileSpreadsheet, zip: FileArchive, video: FileVideo, audio: FileAudio, file: File }
+
+// Image preview, falling back to an icon when the stored bytes are gone
+function Thumb({ att, kind, Icon }) {
+  const [gone, setGone] = useState(false)
+  if (isImage(att) && !gone) {
+    return (
+      <img
+        src={att.url}
+        alt=""
+        loading="lazy"
+        onError={() => setGone(true)}
+        className="h-11 w-11 shrink-0 rounded-lg object-cover"
+      />
+    )
+  }
+  const style = isImage(att) ? 'bg-slate-200 text-slate-500' : KIND_STYLE[kind]
+  const Glyph = isImage(att) ? ImageOff : Icon
+  return (
+    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${style}`}>
+      <Glyph size={20} />
+    </span>
+  )
+}
 
 export default function FilesPanel({ messages, emptyText, deleteLabel, onJump, onDelete }) {
   const [query, setQuery] = useState('')
@@ -45,13 +68,7 @@ export default function FilesPanel({ messages, emptyText, deleteLabel, onJump, o
           const Icon = ICONS[kind] || File
           return (
             <li key={m.id} className="flex items-center gap-3 rounded-lg bg-white p-2.5 shadow-sm">
-              {isImage(att) ? (
-                <img src={att.url} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" loading="lazy" />
-              ) : (
-                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${KIND_STYLE[kind]}`}>
-                  <Icon size={20} />
-                </span>
-              )}
+              <Thumb att={att} kind={kind} Icon={Icon} />
               <div className="min-w-0 flex-1 leading-tight">
                 <p className="truncate text-[13.5px] font-medium text-[#111b21]">{att.name}</p>
                 <p className="text-[11px] text-[#667781]">

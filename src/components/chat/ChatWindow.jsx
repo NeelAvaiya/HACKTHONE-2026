@@ -32,11 +32,13 @@ export default function ChatWindow({
   onDeleteMessage,
   onChipSelect,
   onOfferPick,
+  onOfferDayChange,
   onBookStart,
   onChangeSlot,
   bookCtaLabel,
   changeSlotLabel,
   reviewCtaLabel,
+  dayErrorLabel,
 }) {
   const [draft, setDraft] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
@@ -256,7 +258,11 @@ export default function ChatWindow({
                   <SlotPicker
                     offers={m.slotOffers.offers}
                     dayLabel={m.slotOffers.dayLabel}
-                    onPick={(offer) => onOfferPick(offer, m.slotOffers.day)}
+                    day={m.slotOffers.day}
+                    date={m.slotOffers.date}
+                    onPick={(offer) => onOfferPick(offer, m.slotOffers)}
+                    onDayChange={(dayIdx) => onOfferDayChange(m.id, dayIdx)}
+                    dayErrorLabel={dayErrorLabel}
                   />
                 </div>
               )}

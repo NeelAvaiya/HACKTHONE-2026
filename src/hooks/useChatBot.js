@@ -24,8 +24,9 @@ const assigneeFor = (module) => team.find((m) => m.skills.includes(module))?.nam
 // day: the day the pending offers belong to (the server may roll forward).
 const emptyBooking = () => ({ stage: null, category: null, requested: null, offers: [], day: 0, reAsked: false })
 
-// How a tapped offer is echoed back as the client's own message
-const offerLabel = (offer) => `${offer.time} — ${offer.person}`
+// How a tapped slot is echoed back as the client's own message. The expert is
+// deliberately left out — the client picks a time, we pick who takes the call.
+const offerLabel = (offer, dayLabel) => (dayLabel ? `${dayLabel}, ${offer.time}` : offer.time)
 
 // Only these can go to the vision route; anything else is just filed under Files
 const READABLE_BY_MODEL = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf']
@@ -252,15 +253,68 @@ export function useChatBot() {
       return botSay({ text: botScripts.booking.noSlots })
     }
 
+    // The grid lists every open time that day; `alternatives` stays the source for
+    // the intro line, which still talks about the nearest few.
+    const slots = data.slots?.length ? data.slots : data.alternatives
     flow.stage = 'awaitSlotChoice'
-    flow.offers = data.alternatives
+    flow.offers = slots
     flow.day = data.day
     await botSay({
       text: offersIntro(data, flow.category),
-      // `day` rides along on the message so a reloaded conversation still books
-      // against the right date, even though the in-memory flow is gone
-      slotOffers: { dayLabel: data.dayLabel, day: data.day, offers: data.alternatives },
+      // day/date/category ride along on the message so a reloaded conversation can
+      // still switch days and book, even though the in-memory flow is gone
+      slotOffers: {
+        dayLabel: data.dayLabel,
+        day: data.day,
+        date: data.date,
+        category: flow.category,
+        offers: slots,
+      },
     })
+  }
+
+  /**
+   * Day tab / date picker on a pending slot grid — reloads that message's slots.
+   * Returns false when the day could not be loaded so the card can say so instead
+   * of looking like an empty day.
+   */
+  async function changeOfferDay(messageId, dayIdx) {
+    const meta = messages.find((m) => m.id === messageId)?.slotOffers
+    const category = meta?.category || bookingRef.current.category
+    const params = new URLSearchParams({ day: String(Math.max(0, dayIdx)) })
+    if (category) params.set('category', category)
+    let data
+    try {
+      const r = await fetch(`/api/availability/day?${params}`)
+      if (!r.ok) return false
+      data = await r.json()
+    } catch {
+      return false
+    }
+    if (!data || data.day == null) return false
+
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId && m.slotOffers
+          ? {
+              ...m,
+              slotOffers: {
+                ...m.slotOffers,
+                day: data.day,
+                date: data.date,
+                dayLabel: data.dayLabel,
+                offers: data.slots || [],
+              },
+            }
+          : m
+      )
+    )
+    // Keep typed replies ("book the 3 pm one") aimed at the day now on screen
+    if (bookingRef.current.stage === 'awaitSlotChoice') {
+      bookingRef.current.day = data.day
+      bookingRef.current.offers = data.slots || []
+    }
+    return true
   }
 
   async function bookOffer(offer, dayIdx = 0) {
@@ -277,15 +331,23 @@ export function useChatBot() {
 
     // Someone else took it between the offer and the click
     if (result?.conflict) {
-      if (!result.alternatives?.length) {
+      const slots = result.slots?.length ? result.slots : result.alternatives || []
+      if (!slots.length) {
         bookingRef.current = emptyBooking()
         return botSay({ text: botScripts.booking.noSlots })
       }
       flow.stage = 'awaitSlotChoice'
-      flow.offers = result.alternatives
+      flow.offers = slots
+      flow.day = result.day ?? dayIdx
       return botSay({
         text: botScripts.booking.taken,
-        slotOffers: { day: dayIdx, offers: result.alternatives },
+        slotOffers: {
+          day: result.day ?? dayIdx,
+          date: result.date,
+          dayLabel: result.dayLabel,
+          category: flow.category,
+          offers: slots,
+        },
       })
     }
     if (!result) {
@@ -333,11 +395,11 @@ export function useChatBot() {
     return false
   }
 
-  // `day` comes from the message the offer was rendered on; the in-memory flow is
-  // only a fallback for offers made in this session.
-  function pickOffer(offer, day) {
-    push({ from: 'user', text: `📅 ${offerLabel(offer)}` })
-    bookOffer(offer, day ?? bookingRef.current.day)
+  // `meta` is the slotOffers block of the message the grid was rendered on; the
+  // in-memory flow is only a fallback for offers made in this session.
+  function pickOffer(offer, meta) {
+    push({ from: 'user', text: `📅 ${offerLabel(offer, meta?.dayLabel)}` })
+    bookOffer(offer, meta?.day ?? bookingRef.current.day)
   }
 
   // "Change slot" on the confirmation card: free the slot and re-offer
@@ -580,6 +642,7 @@ export function useChatBot() {
     deleteMessage,
     selectChip,
     pickOffer,
+    changeOfferDay,
     startBooking,
     changeSlot,
   }

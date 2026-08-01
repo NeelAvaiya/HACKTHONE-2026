@@ -1,5 +1,6 @@
 // Chat pane identity strip: avatar + name | role + live status, with Chat/Files/Starred tabs
-import { Bot, MessageSquareText, FolderClosed, Star, Search, MoreVertical } from 'lucide-react'
+import { MessageSquareText, FolderClosed, Star, Search, MoreVertical } from 'lucide-react'
+import Avatar from '../common/Avatar.jsx'
 import DropdownMenu from './DropdownMenu.jsx'
 
 const TABS = [
@@ -23,9 +24,7 @@ export default function ChatHeader({
     <div className="border-l border-black/5 bg-[#f0f2f5]">
       <div className="flex items-center gap-3 px-4 pb-1.5 pt-2.5">
         <span className="relative shrink-0">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#00a884] text-white">
-            <Bot size={24} />
-          </span>
+          <Avatar name={persona.name} size={44} />
           <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#f0f2f5] bg-[#22c55e]" />
         </span>
 

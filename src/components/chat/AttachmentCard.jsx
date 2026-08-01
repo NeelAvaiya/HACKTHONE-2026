@@ -1,5 +1,6 @@
 // Attachment inside a chat bubble: image preview, or a file row with a download button
-import { FileText, FileSpreadsheet, FileArchive, FileVideo, FileAudio, File, Download } from 'lucide-react'
+import { useState } from 'react'
+import { FileText, FileSpreadsheet, FileArchive, FileVideo, FileAudio, File, Download, ImageOff } from 'lucide-react'
 import { formatBytes, fileKind, isImage, KIND_STYLE, downloadUrl } from '../../utils/fileMeta.js'
 
 const ICONS = {
@@ -14,13 +15,28 @@ const ICONS = {
 
 export default function AttachmentCard({ attachment }) {
   const kind = fileKind(attachment)
+  // The message survives in the DB even if the stored bytes are gone, so say that
+  // plainly instead of leaving a broken-image icon in the thread
+  const [gone, setGone] = useState(false)
 
   if (isImage(attachment)) {
+    if (gone) {
+      return (
+        <div className="flex items-center gap-2.5 rounded-lg bg-black/5 p-2.5 text-[#667781]">
+          <ImageOff size={18} className="shrink-0" />
+          <span className="min-w-0 text-[12px] leading-tight">
+            <span className="block truncate font-medium text-[#111b21]">{attachment.name}</span>
+            This file is no longer available — please send it again.
+          </span>
+        </div>
+      )
+    }
     return (
       <a href={attachment.url} target="_blank" rel="noreferrer" className="block">
         <img
           src={attachment.url}
           alt={attachment.name}
+          onError={() => setGone(true)}
           className="max-h-64 w-full rounded-lg object-cover"
           loading="lazy"
         />
