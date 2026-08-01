@@ -3,13 +3,15 @@ import { useState } from 'react'
 import { Star } from 'lucide-react'
 import Card from '../common/Card.jsx'
 
-export default function ReviewForm({ questions, options, starsLabel, submitLabel, onSubmit }) {
+// className lets the caller widen the form: it renders in a chat bubble on one
+// side and on a full page on the other.
+export default function ReviewForm({ questions, options, starsLabel, submitLabel, onSubmit, className = 'max-w-sm p-4' }) {
   const [answers, setAnswers] = useState({})
   const [stars, setStars] = useState(0)
   const complete = stars > 0 && questions.every((q) => answers[q.key])
 
   return (
-    <Card className="max-w-sm p-4">
+    <Card className={className}>
       {questions.map((q) => (
         <div key={q.key} className="mb-3">
           <p className="text-xs font-semibold text-slate-700">{q.label}</p>

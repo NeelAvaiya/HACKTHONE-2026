@@ -11,7 +11,7 @@ const AVATAR_COLORS = ['#7c3aed', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444']
 const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
 
 export default function SupportInbox() {
-  const { appointments, complete, submitReview, simulateDuplicate, mergeAppointments, keepSeparateAppt, reload } = useBookings()
+  const { appointments, complete, simulateDuplicate, mergeAppointments, keepSeparateAppt, reload } = useBookings()
   // Clicking a booked cell on the team calendar navigates here with the id
   const location = useLocation()
   const [selectedId, setSelectedId] = useState(location.state?.appointmentId || null)
@@ -90,7 +90,6 @@ export default function SupportInbox() {
               onDone={(a) => complete(a.id)}
               onMerge={handleMerge}
               onKeepSeparate={(a) => keepSeparateAppt(a.id)}
-              onReview={(a, review) => submitReview(a.id, 'support', review)}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 bg-[#f0f2f5] text-[#8696a0]">
