@@ -1,32 +1,36 @@
-// Pure aggregation over appointments for the support Reviews tab.
+// Pure aggregation over appointments for the support Dashboard.
 // Only completed meetings count — an upcoming call has nothing to review yet.
+//
+// Reviews go ONE way: the client rates the support expert. Support does not
+// rate the client back, so there is one review per meeting and no "are both
+// sides in?" state to track.
 
 const isDone = (a) => a?.status === 'done'
 
-/** Every star rating submitted for one appointment, both sides pooled. */
-const starsOf = (a) => [a.reviews?.client?.stars, a.reviews?.support?.stars].filter((n) => typeof n === 'number')
+/** The client's star rating for one appointment, if they left one. */
+const starsOf = (a) => (typeof a?.reviews?.client?.stars === 'number' ? [a.reviews.client.stars] : [])
 
-export const bothReviewed = (a) => Boolean(a?.reviews?.client && a?.reviews?.support)
+export const isReviewed = (a) => Boolean(a?.reviews?.client)
 
 /**
- * Completed meetings this side still owes a review for. Backs the "My Meetings"
+ * Completed meetings the client still owes a review for. Backs the "My Meetings"
  * nav badge, so a pending review is visible from anywhere instead of depending
  * on a chat message that may be long gone.
  */
-export function pendingReviews(appointments = [], side = 'client') {
-  return (Array.isArray(appointments) ? appointments : []).filter((a) => isDone(a) && !a?.reviews?.[side])
+export function pendingReviews(appointments = []) {
+  return (Array.isArray(appointments) ? appointments : []).filter((a) => isDone(a) && !isReviewed(a))
 }
 
 /**
  * @returns {{reviewed: number, awaiting: number, average: number, total: number}}
- * reviewed = completed meetings with BOTH reviews in
- * awaiting = completed meetings missing at least one
- * average  = mean of every submitted rating, both sides pooled, to 1 decimal
+ * reviewed = completed meetings the client has rated
+ * awaiting = completed meetings with no rating yet
+ * average  = mean of every client rating, to 1 decimal
  */
 export function reviewStats(appointments = []) {
   const done = (Array.isArray(appointments) ? appointments : []).filter(isDone)
   const stars = done.flatMap(starsOf)
-  const reviewed = done.filter(bothReviewed).length
+  const reviewed = done.filter(isReviewed).length
 
   return {
     total: done.length,

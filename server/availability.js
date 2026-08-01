@@ -206,8 +206,20 @@ async function nextId() {
   return `APT-${Math.max(1000, ...nums) + 1}`
 }
 
+// Caps the pre-meeting brief: at most 3 questions, 180 chars each, strings only.
+// An unbounded array here would let one request write an arbitrarily large
+// document and dump it on the expert's screen.
+export function sanitizeQuestions(input) {
+  if (!Array.isArray(input)) return []
+  return input
+    .map((q) => (typeof q === 'string' ? { text: q, unanswered: false } : q))
+    .filter((q) => q && typeof q.text === 'string' && q.text.trim())
+    .slice(0, 3)
+    .map((q) => ({ text: q.text.trim().slice(0, 180), unanswered: Boolean(q.unanswered) }))
+}
+
 availability.post('/appointments/book', async (req, res) => {
-  const { dayIdx = 0, time, person, category, client } = req.body || {}
+  const { dayIdx = 0, time, person, category, client, questions } = req.body || {}
   const slotTime = normalizeTime(time)
   if (!slotTime || !person) return res.status(400).json({ error: 'time and person are required' })
 
@@ -237,6 +249,10 @@ availability.post('/appointments/book', async (req, res) => {
     time: slotTime,
     slot: `${dayLabel(dayIdx)}, ${slotTime}`,
     client: client || 'Rohit Verma (FinEdge Solutions)',
+    // What the client asked HelpSense before booking, shown to the expert as a
+    // brief. Sanitised rather than trusted: this is free text from the browser
+    // and it gets rendered straight into the support thread.
+    questions: sanitizeQuestions(questions),
     status: 'upcoming',
     notified: false,
     createdAt: new Date().toISOString(),

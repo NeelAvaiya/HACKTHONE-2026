@@ -1,6 +1,7 @@
 // Routes only: client chat + support-side nested tabs (keyed for page-fade transition)
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Navbar from './components/layout/Navbar.jsx'
+import ScrollToTop from './components/layout/ScrollToTop.jsx'
 import Landing from './pages/Landing.jsx'
 import Client from './pages/Client.jsx'
 import Chat from './pages/Chat.jsx'
@@ -20,6 +21,7 @@ export default function App() {
   const location = useLocation()
   return (
     <div className="min-h-screen">
+      <ScrollToTop />
       <Navbar />
       <div key={location.pathname} className="page-fade">
         <Routes location={location}>
@@ -27,13 +29,13 @@ export default function App() {
             <Route index element={<Chat />} />
             <Route path="chat" element={<Chat />} />
             <Route path="meetings" element={<ClientMeetings />} />
-            <Route path="auto-assign" element={<AutoAssign />} />
             <Route path="requests" element={<ClientRequests />} />
           </Route>
           <Route path="/support" element={<Support />}>
             <Route index element={<SupportInbox />} />
             <Route path="calendar" element={<SupportCalendar />} />
             <Route path="client-work" element={<SupportClientWork />} />
+            <Route path="auto-assign" element={<AutoAssign />} />
             {/* Reviews live in the Dashboard now — one place shows both sides */}
             <Route path="reviews" element={<Navigate to="/support/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
@@ -47,6 +49,8 @@ export default function App() {
           {/* Booking now lives entirely in the chat — old /book page removed */}
           <Route path="/book" element={<Navigate to="/chat" replace />} />
           <Route path="/dashboard" element={<Navigate to="/support/dashboard" replace />} />
+          {/* Auto-assign moved to the support side — keep the old client link alive */}
+          <Route path="/auto-assign" element={<Navigate to="/support/auto-assign" replace />} />
           <Route path="/metrics" element={<Navigate to="/support/metrics" replace />} />
         </Routes>
       </div>

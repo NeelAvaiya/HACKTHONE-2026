@@ -1,6 +1,7 @@
-// "/review/:id/:side" — one review page used by BOTH sides. `:side` only decides
-// which review slot is written and where Back returns to; everything else is
-// identical, which is what keeps the two sides genuinely the same.
+// "/review/:id/:side" — the client's review of a completed meeting.
+// Reviews are one-way: the client rates the expert, not the other way round.
+// `:side` is kept in the URL only so old links stay valid; anything other than
+// 'client' is redirected rather than rendered.
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Star } from 'lucide-react'
 import { useBookings } from '../context/BookingContext.jsx'
@@ -8,32 +9,29 @@ import { botScripts } from '../data/botScripts.js'
 import Card from '../components/common/Card.jsx'
 import ReviewForm from '../components/booking/ReviewForm.jsx'
 import ReviewBlock from '../components/booking/ReviewBlock.jsx'
+import { personName } from '../utils/person.js'
 
-const SIDES = ['client', 'support']
-// "Rohit Verma (FinEdge Solutions)" -> "Rohit Verma"
-const personName = (client = '') => client.split(' (')[0]
+// Support used to review the client here too. That direction is gone, so a
+// /support link lands back on the inbox instead of opening an empty form.
 
 export default function ReviewPage() {
   const { id, side } = useParams()
   const navigate = useNavigate()
   const { appointments, submitReview } = useBookings()
 
-  if (!SIDES.includes(side)) return <Navigate to="/support" replace />
+  if (side !== 'client') return <Navigate to="/support" replace />
 
   const appt = appointments.find((a) => a.id === id)
   // An empty list means the API hasn't answered yet, not "not found"
   if (!appt) {
     if (!appointments.length) return null
-    return <Navigate to={side === 'client' ? '/chat' : '/support'} replace />
+    return <Navigate to="/chat" replace />
   }
 
   const clientName = personName(appt.client)
   const expertName = appt.person
-  const mine = appt.reviews?.[side]
-  const back = () => navigate(side === 'client' ? '/chat' : '/support', { state: { appointmentId: appt.id } })
-
-  // Deliberately your own rating, not an average of both — an average would let
-  // each side work out what the other gave.
+  const mine = appt.reviews?.client
+  const back = () => navigate('/chat', { state: { appointmentId: appt.id } })
   const myStars = mine?.stars ?? null
 
   return (
@@ -42,7 +40,7 @@ export default function ReviewPage() {
         onClick={back}
         className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
       >
-        <ArrowLeft size={15} /> {side === 'client' ? botScripts.reviewBackClient : botScripts.reviewBackSupport}
+        <ArrowLeft size={15} /> {botScripts.reviewBackClient}
       </button>
 
       <Card className="mt-4 overflow-hidden">
@@ -72,8 +70,6 @@ export default function ReviewPage() {
           ) : mine ? (
             <>
               <p className="mb-3 text-sm font-semibold text-emerald-700">{botScripts.reviewPageDone}</p>
-              {/* Only ever the reviewer's own feedback — the other side's stays
-                  private to them, and is pooled on the support Dashboard */}
               <ReviewBlock title="Your review" review={mine} />
             </>
           ) : (
@@ -84,7 +80,7 @@ export default function ReviewPage() {
                 options={botScripts.reviewOptions}
                 starsLabel={botScripts.reviewStarsLabel}
                 submitLabel={botScripts.reviewSubmitLabel}
-                onSubmit={(review) => submitReview(appt.id, side, review)}
+                onSubmit={(review) => submitReview(appt.id, 'client', review)}
                 className="border-slate-200 p-4"
               />
             </>

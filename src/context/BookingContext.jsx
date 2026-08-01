@@ -29,12 +29,14 @@ export function BookingProvider({ children }) {
   // Books through the server so the slot is re-checked before it is written —
   // returns the created appointment, or { conflict: true, alternatives } if the
   // slot was taken between the offer and this call.
-  async function book({ dayIdx = 0, time, person, category }) {
+  // `questions` is what the client asked HelpSense before booking — it rides
+  // along so the expert opens the meeting already knowing the problem.
+  async function book({ dayIdx = 0, time, person, category, questions = [] }) {
     try {
       const r = await fetch('/api/appointments/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dayIdx, time, person, category }),
+        body: JSON.stringify({ dayIdx, time, person, category, questions }),
       })
       const data = await r.json()
       if (r.status === 409) {

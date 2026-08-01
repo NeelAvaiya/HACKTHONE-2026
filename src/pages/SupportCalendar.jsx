@@ -38,7 +38,7 @@ export default function SupportCalendar() {
   const [dayIdx, setDayIdx] = useState(0)
   const days = useMemo(dayStrip, [])
 
-  // Same "no sockets" freshness rule as the Inbox: opening the tab refetches
+  // Same "no sockets" freshness rule as the Chat tab: opening the tab refetches
   useEffect(() => {
     reload()
     fetch('/api/team')

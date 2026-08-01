@@ -2,7 +2,9 @@
 import { CheckCircle2, Video } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import MessageBubble from '../chat/MessageBubble.jsx'
+import AskedBefore from './AskedBefore.jsx'
 import { meetingSummary } from '../../utils/meetingSummary.js'
+import { personName, personCompany, initialsOf } from '../../utils/person.js'
 
 export default function SupportThread({ appt, copy, onDone }) {
   const { expert: first, discussed, nextSteps } = meetingSummary(appt, copy)
@@ -14,11 +16,18 @@ export default function SupportThread({ appt, copy, onDone }) {
   return (
     <div className="wa-font flex h-full flex-col">
       <div className="flex items-center gap-3 border-l border-black/5 bg-[#f0f2f5] px-4 py-2.5">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#7c3aed] text-sm font-bold text-white">
-          {appt.client.split(' ').map((w) => w[0]).join('').slice(0, 2)}
+        {/* Support's counterpart is the client who booked, so the header names
+            them — initials from the person, never from the company in brackets */}
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#7c3aed] text-sm font-bold text-white">
+          {initialsOf(appt.client)}
         </span>
-        <div className="flex-1 leading-tight">
-          <p className="text-[15px] font-semibold text-[#111b21]">{appt.client}</p>
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="truncate text-[15px] font-semibold text-[#111b21]">
+            {personName(appt.client)}
+            {personCompany(appt.client) && (
+              <span className="font-normal text-[#667781]"> · {personCompany(appt.client)}</span>
+            )}
+          </p>
           <p className="text-xs text-[#667781]">
             {appt.status === 'done' ? 'meeting completed ✓' : `upcoming · ${appt.slot}`}
           </p>
@@ -33,6 +42,8 @@ export default function SupportThread({ appt, copy, onDone }) {
         </div>
 
         <MessageBubble from="bot" text={bookingText} time={appt.createdAt} />
+
+        <AskedBefore questions={appt.questions || []} copy={copy.askedBefore} />
 
         {appt.status === 'upcoming' && (
           <div className="flex flex-wrap gap-2 pl-2">
@@ -51,19 +62,15 @@ export default function SupportThread({ appt, copy, onDone }) {
           </div>
         )}
 
+        {/* No review prompt here: reviews are one-way. The client rates the
+            expert, and those ratings are read on the Dashboard. */}
         {appt.status === 'done' && (
           <>
             <MessageBubble from="bot" text={summaryText} />
-            <MessageBubble from="bot" text={copy.reviewIntro} />
-            {/* Reviewing happens on the shared /review page, same as the client side */}
-            <div className="pl-2">
-              <Link
-                to={`/review/${appt.id}/support`}
-                className="inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#00a884] shadow-sm ring-1 ring-black/5 transition-colors hover:bg-[#f0f2f5]"
-              >
-                {appt.reviews?.support ? copy.reviewViewLabel : copy.reviewCtaLabel}
-              </Link>
-            </div>
+            <MessageBubble
+              from="bot"
+              text={appt.reviews?.client ? copy.reviewReceived : copy.reviewAwaited}
+            />
           </>
         )}
       </div>

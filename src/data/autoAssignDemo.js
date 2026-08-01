@@ -62,7 +62,7 @@ export const autoAssignDemo = {
 export const autoAssignCopy = {
   title: 'Automatic reassignment',
   intro:
-    'When the matched expert is busy at the time you asked for, the booking moves to another expert with the same skills instead of asking you to pick again. This is a preview with sample data.',
+    'When the matched expert is busy at the time a client asks for, the booking moves to another expert with the same skills instead of sending the client back to pick again. This is a preview with sample data.',
   run: 'Run the scenario',
   replay: 'Play again',
   previewBadge: 'Preview · sample data',

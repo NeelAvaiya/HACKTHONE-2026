@@ -62,7 +62,7 @@ export const botScripts = {
   // Identity strip at the top of the chat pane
   persona: {
     name: 'HelpSense',
-    role: 'Senior. Support Specialist',
+    role: 'AI Assistant',
     status: 'Online - Clock In',
     typing: 'typing…',
   },
@@ -188,7 +188,8 @@ export const botScripts = {
     ],
   },
 
-  // Post-meeting review form (asked on BOTH sides after the summary)
+  // Post-meeting review form. Asked of the CLIENT only — reviews are one-way,
+  // the client rates the expert and support does not rate the client back.
   reviewIntro: 'Your feedback matters! 🙏 A quick 10-second review, please:',
   reviewQuestions: [
     { key: 'tone', label: 'How was the tone?' },
@@ -199,15 +200,17 @@ export const botScripts = {
   reviewStarsLabel: 'Overall rating',
   reviewSubmitLabel: 'Submit review',
 
-  // Shared review page (both sides)
+  // Client review page
   reviewCtaLabel: '⭐ Give your review',
-  reviewViewLabel: '⭐ View reviews',
+  reviewViewLabel: '⭐ View your review',
+  // Shown in the support thread in place of the review prompt support used to get
+  reviewReceived: '⭐ The client has left a review for this call — you can read it on the Dashboard.',
+  reviewAwaited: 'Waiting on the client to review this call. It will show up on the Dashboard.',
   reviewPageTitle: 'How did the meeting go?',
   reviewPageDone: 'Thanks — your review is in.',
   reviewNotReady: 'This review opens once the meeting is marked complete.',
   reviewBackClient: 'Back to chat',
-  reviewBackSupport: 'Back to inbox',
-  reviewsTabEmpty: 'No completed meetings yet. Reviews appear here after a call is marked done.',
+  reviewsTabEmpty: 'No completed meetings yet. Client reviews appear here after a call is marked done.',
 
   // Client-side "My requests" + support-side "Client work" (static demo data)
   requestsTitle: 'My requests',
@@ -267,6 +270,15 @@ export const botScripts = {
     "Hmm, my help docs don't have an exact answer for that — our support team can explain it properly. 🙋 Book an appointment and an expert will walk you through it on a call.",
   bookCtaLabel: '📅 Book an appointment',
   joinLabel: 'Join meeting', // support-side button that opens the call page
+
+  // Pre-meeting brief on the support side: what the client asked HelpSense
+  // before the slot was booked, so the expert doesn't start from scratch.
+  askedBefore: {
+    title: 'What the client asked HelpSense',
+    subtitle: 'Straight from the chat, before this slot was booked',
+    unansweredTag: 'docs had no answer',
+    empty: 'The client booked without asking anything first — open with what they need.',
+  },
 
   // Greetings and pleasantries — answered locally, never routed to booking.
   // These are the bot ANSWERING, so they mirror the client's language. Every

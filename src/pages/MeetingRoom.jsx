@@ -7,6 +7,8 @@ import { ShieldCheck, Users } from 'lucide-react'
 import { useBookings } from '../context/BookingContext.jsx'
 import { useCallScript } from '../hooks/useCallScript.js'
 import { scriptFor, callCopy } from '../data/callScript.js'
+import { botScripts } from '../data/botScripts.js'
+import { personName, personCompany } from '../utils/person.js'
 import { formatDuration } from '../utils/callScript.js'
 import ParticipantTile from '../components/meeting/ParticipantTile.jsx'
 import CallControls from '../components/meeting/CallControls.jsx'
@@ -15,8 +17,6 @@ const EXPERT_COLOUR = '#8ab4f8'
 const CLIENT_COLOUR = '#fdd663'
 
 const firstName = (name = '') => name.split(' ')[0]
-// "Rohit Verma (FinEdge Solutions)" -> "Rohit Verma"
-const personName = (client = '') => client.split(' (')[0]
 
 export default function MeetingRoom() {
   const { id } = useParams()
@@ -86,7 +86,7 @@ export default function MeetingRoom() {
             />
             <ParticipantTile
               name={client}
-              role={appt.client.includes('(') ? appt.client.split(' (')[1].replace(')', '') : null}
+              role={personCompany(appt.client) || null}
               colour={CLIENT_COLOUR}
               speaking={activeSpeaker === 'client'}
             />
@@ -107,6 +107,27 @@ export default function MeetingRoom() {
         {transcriptOpen && (
           <aside className="hidden w-80 shrink-0 flex-col rounded-2xl bg-[#292a2d] md:flex">
             <p className="border-b border-white/5 px-4 py-3 text-sm font-medium">{callCopy.transcriptTitle}</p>
+            {/* Pinned above the transcript: the expert can glance at what the
+                client originally asked without leaving the call */}
+            {appt.questions?.length > 0 && (
+              <div className="border-b border-white/5 px-4 py-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-[#9aa0a6]">
+                  {botScripts.askedBefore.title}
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {appt.questions.map((q, i) => (
+                    <li
+                      key={`${i}-${q.text}`}
+                      className={`rounded-md border-l-2 bg-white/5 px-2.5 py-1.5 text-[13px] leading-snug text-[#e8eaed] ${
+                        q.unanswered ? 'border-amber-400' : 'border-white/20'
+                      }`}
+                    >
+                      “{q.text}”
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
               {spoken.length ? (
                 spoken.map((line, i) => (

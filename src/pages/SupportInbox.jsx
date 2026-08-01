@@ -1,13 +1,13 @@
-// "/support" (Inbox sub-tab) — WhatsApp-style: bookings as chats (left) + thread (right)
+// "/support" (Chat sub-tab) — WhatsApp-style: bookings as chats (left) + thread (right)
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { MessageSquareDashed } from 'lucide-react'
 import { useBookings } from '../context/BookingContext.jsx'
 import { botScripts } from '../data/botScripts.js'
 import SupportThread from '../components/support/SupportThread.jsx'
+import { personName, initialsOf } from '../utils/person.js'
 
 const AVATAR_COLORS = ['#7c3aed', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444']
-const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
 
 export default function SupportInbox() {
   const { appointments, complete, reload } = useBookings()
@@ -25,7 +25,7 @@ export default function SupportInbox() {
       <div className="flex h-full">
         <aside className="flex w-full flex-col border-r border-black/10 bg-white md:w-[30%] md:min-w-[18rem] md:max-w-sm">
           <div className="flex items-center justify-between bg-[#f0f2f5] px-4 py-3">
-            <p className="text-lg font-bold text-[#111b21]">Support Inbox</p>
+            <p className="text-lg font-bold text-[#111b21]">Chats</p>
           </div>
 
           <div className="flex-1 overflow-y-auto">
@@ -50,7 +50,7 @@ export default function SupportInbox() {
                 </span>
                 <div className="min-w-0 flex-1 border-b border-black/5 pb-3">
                   <div className="flex items-baseline justify-between">
-                    <p className="truncate text-[15px] text-[#111b21]">{a.client.split(' (')[0]}</p>
+                    <p className="truncate text-[15px] text-[#111b21]">{personName(a.client)}</p>
                     <span className={`text-[11px] ${a.status === 'done' ? 'text-[#667781]' : 'text-[#00a884]'}`}>
                       {a.status === 'done' ? '✓ done' : 'new'}
                     </span>

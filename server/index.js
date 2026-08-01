@@ -59,6 +59,9 @@ The language of the question NEVER decides this. A question in Hindi or Hinglish
 // Load help-doc PDFs once at startup; drop new PDFs in PDF/ and restart to pick them up
 const PDF_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'PDF')
 const knowledge = await loadKnowledge(PDF_DIR)
+// Cached answers are keyed by the docs they were written from, so adding or
+// editing a PDF automatically retires replies produced without it
+const DOCS_VERSION = knowledge.version
 const SYSTEM_PROMPT = `${BASE_PROMPT}
 
 OFFICIAL SUPERWORKS HELP DOCS:
@@ -84,7 +87,7 @@ app.post('/api/chat', async (req, res) => {
   if (db && normalized) {
     const cached = await db
       .collection('qa')
-      .findOne({ normalized, lang, promptVersion: PROMPT_VERSION })
+      .findOne({ normalized, lang, promptVersion: PROMPT_VERSION, docsVersion: DOCS_VERSION })
       .catch(() => null)
     if (cached) {
       return res.json({ reply: cached.reply, covered: cached.covered, source: 'db' })
@@ -135,6 +138,7 @@ app.post('/api/chat', async (req, res) => {
                   reply,
                   covered: true,
                   promptVersion: PROMPT_VERSION,
+                  docsVersion: DOCS_VERSION,
                   createdAt: new Date(),
                 },
               },
@@ -219,5 +223,6 @@ async function callGemini(key, model, contents) {
 
 app.listen(PORT, () => {
   console.log(`HelpSense API proxy running on http://localhost:${PORT}`)
+  console.log(`📚 ${knowledge.count} help doc(s) loaded · docs version ${DOCS_VERSION}`)
   if (!API_KEYS.length) console.warn('⚠ No GEMINI_API_KEY in .env — chat will use fallback replies')
 })

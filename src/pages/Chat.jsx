@@ -4,6 +4,7 @@ import { Search, Megaphone } from 'lucide-react'
 import { useChatBot } from '../hooks/useChatBot.js'
 import { useWork } from '../context/WorkContext.jsx'
 import { botScripts } from '../data/botScripts.js'
+import { currentUser } from '../data/currentUser.js'
 import { buildAnnouncements, unreadSince, latestAt } from '../utils/announcements.js'
 import ChatWindow from '../components/chat/ChatWindow.jsx'
 import AnnouncementsThread from '../components/chat/AnnouncementsThread.jsx'
@@ -79,8 +80,16 @@ export default function Chat() {
     <main className="wa-font mx-auto h-[calc(100vh-6.5rem)] max-w-[1600px]">
       <div className="flex h-full">
         <aside className="hidden w-[30%] min-w-[18rem] max-w-sm flex-col border-r border-black/10 bg-white md:flex">
-          <div className="bg-[#f0f2f5] px-4 py-3">
-            <p className="text-lg font-bold text-[#111b21]">Chats</p>
+          {/* WhatsApp Web puts YOUR profile above the chat list, not the person
+              you are talking to — that stays on the conversation header. */}
+          <div className="flex items-center gap-3 bg-[#f0f2f5] px-4 py-2.5">
+            <Avatar name={currentUser.name} size={40} />
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="truncate text-[15px] font-semibold text-[#111b21]">{currentUser.name}</p>
+              <p className="truncate text-[11px] text-[#667781]">
+                {currentUser.role} · {currentUser.company}
+              </p>
+            </div>
           </div>
           <div className="px-3 py-2">
             <div className="flex items-center gap-3 rounded-lg bg-[#f0f2f5] px-3 py-1.5">
