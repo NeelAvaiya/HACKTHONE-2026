@@ -25,15 +25,26 @@ const API_KEYS = [process.env.GEMINI_API_KEY, process.env.GEMINI_API_KEY_BACKUP]
 
 // Bumped whenever SYSTEM_PROMPT changes meaningfully. Cached answers written under
 // an older version are ignored, so the DB cache can't serve pre-change replies
-// (e.g. the old Hinglish answers) straight past the current prompt.
-const PROMPT_VERSION = 2
+// (e.g. the old English-only answers) straight past the current prompt.
+const PROMPT_VERSION = 3
 
 const BASE_PROMPT = `You are AI Syndicate, the 24/7 support agent for Superworks, a B2B HRMS/payroll SaaS used by Indian companies.
-ALWAYS reply in English. The user may write in Hinglish or Hindi — understand it, but always answer in English.
 Be warm and practical. Keep answers to 2-4 short sentences.
 
-STRICT RULE: You may ONLY answer using the OFFICIAL SUPERWORKS HELP DOCS below. Quote exact navigation paths (e.g. "Attendance → My OD & Remote Work") and steps from the docs. Never invent menu paths and never answer from general knowledge.
-If the user's question is NOT clearly answered by the docs, reply with exactly this single token and nothing else: NOT_COVERED`
+LANGUAGE: Reply in the SAME language the user wrote in.
+- English question -> answer in English.
+- Hindi written in Latin script ("attendance kya hai", "mujhe chhutti apply karni hai") -> answer in Hindi, also in Latin script.
+- Hindi in Devanagari -> answer in Devanagari.
+- Hinglish (Hindi and English mixed) -> answer in the same mix.
+Keep product menu names exactly as they appear in the docs (Attendance, My Payroll, Payslips) even when the rest of your answer is in Hindi — they are literal menu labels in the product.
+
+GREETINGS: If the user greets you, thanks you, or makes small talk ("hi", "hello", "namaste", "kaise ho", "thanks"), reply warmly and normally. NEVER answer NOT_COVERED to a greeting.
+
+ANSWERING PRODUCT QUESTIONS: Use the OFFICIAL SUPERWORKS HELP DOCS below. Quote exact navigation paths (e.g. "Attendance → My OD & Remote Work") and steps from the docs. Never invent menu paths.
+You SHOULD answer when the docs cover the topic, including when the user asks what a feature is or what it is for — explain it using what the docs say about it.
+
+NOT_COVERED: Reply with exactly the single token NOT_COVERED, and nothing else, ONLY when the docs genuinely say nothing about the topic being asked about.
+The language of the question NEVER decides this. A question in Hindi or Hinglish about a topic the docs DO cover must be answered normally, in the user's language. Do not answer NOT_COVERED just because the question was not written in English.`
 
 // Load help-doc PDFs once at startup; drop new PDFs in PDF/ and restart to pick them up
 const PDF_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'PDF')
@@ -49,14 +60,19 @@ const FALLBACK_REPLY =
   'I can help with payroll, attendance, or PMS questions — or set up a call with our team. Could you tell me a bit more?'
 
 app.post('/api/chat', async (req, res) => {
-  const { message, history = [] } = req.body || {}
+  const { message, history = [], lang = 'en' } = req.body || {}
   if (!message) return res.status(400).json({ error: 'message is required' })
 
-  // Level 1: same question already answered before → serve straight from MongoDB
+  // Level 1: same question already answered before → serve straight from MongoDB.
+  // The language is part of the key: without it, the first English answer to a
+  // question would be replayed to someone who asked in Hindi.
   const db = getDB()
   const normalized = normalizeQuestion(message)
   if (db && normalized) {
-    const cached = await db.collection('qa').findOne({ normalized, promptVersion: PROMPT_VERSION }).catch(() => null)
+    const cached = await db
+      .collection('qa')
+      .findOne({ normalized, lang, promptVersion: PROMPT_VERSION })
+      .catch(() => null)
     if (cached) {
       return res.json({ reply: cached.reply, covered: cached.covered, source: 'db' })
     }
@@ -67,13 +83,20 @@ app.post('/api/chat', async (req, res) => {
     return res.json({ reply: FALLBACK_REPLY, source: 'fallback' })
   }
 
-  // Gemini expects alternating user/model turns; keep the last 10 messages
+  // Gemini expects alternating user/model turns; keep the last 10 messages.
+  // The detected language rides along as an explicit instruction — the model
+  // reads it more reliably than it infers it from a short question.
+  const LANG_HINT = {
+    hi: 'The user is writing Hindi in Latin script. Reply in Hindi using Latin script.',
+    hinglish: 'The user is writing Hinglish. Reply in the same Hindi-English mix.',
+    en: 'The user is writing English. Reply in English.',
+  }
   const contents = [
     ...history.slice(-10).map((m) => ({
       role: m.from === 'user' ? 'user' : 'model',
       parts: [{ text: m.text }],
     })),
-    { role: 'user', parts: [{ text: message }] },
+    { role: 'user', parts: [{ text: `${LANG_HINT[lang] || LANG_HINT.en}\n\n${message}` }] },
   ]
 
   // Try every key × model combo: primary key/model first, then backups —
@@ -84,12 +107,24 @@ app.post('/api/chat', async (req, res) => {
       if (reply) {
         // Question not in the help docs → frontend routes the user to book an appointment
         const covered = !reply.includes('NOT_COVERED')
-        // Remember this Q&A so the next identical question is served from the DB
-        if (db && normalized) {
+        // Only successful answers are cached. Caching a refusal would make one
+        // borderline NOT_COVERED permanent for that phrasing, so a question the
+        // model would happily answer on a retry gets refused forever.
+        if (db && normalized && covered) {
           db.collection('qa')
             .updateOne(
-              { normalized },
-              { $set: { question: message, normalized, reply: covered ? reply : null, covered, promptVersion: PROMPT_VERSION, createdAt: new Date() } },
+              { normalized, lang },
+              {
+                $set: {
+                  question: message,
+                  normalized,
+                  lang,
+                  reply,
+                  covered: true,
+                  promptVersion: PROMPT_VERSION,
+                  createdAt: new Date(),
+                },
+              },
               { upsert: true }
             )
             .catch(() => {})

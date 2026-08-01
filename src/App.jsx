@@ -8,6 +8,7 @@ import SupportInbox from './pages/SupportInbox.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Metrics from './pages/Metrics.jsx'
 import SupportCalendar from './pages/SupportCalendar.jsx'
+import MeetingRoom from './pages/MeetingRoom.jsx'
 
 export default function App() {
   const location = useLocation()
@@ -24,6 +25,8 @@ export default function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="metrics" element={<Metrics />} />
           </Route>
+          {/* Outside the /support tab shell so the call fills the page */}
+          <Route path="/support/meeting/:id" element={<MeetingRoom />} />
           <Route path="/landing" element={<Landing />} />
           {/* Booking now lives entirely in the chat — old /book page removed */}
           <Route path="/book" element={<Navigate to="/chat" replace />} />

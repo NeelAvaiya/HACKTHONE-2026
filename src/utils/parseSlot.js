@@ -22,10 +22,11 @@ export function parseSlot(text, now = new Date()) {
 }
 
 function parseDay(lower, now) {
-  // "day after tomorrow" contains "tomorrow", so it has to be tested first
-  if (/\b(day after tomorrow|parso|parsu)\b/.test(lower)) return 2
-  if (/\b(tomorrow|kal)\b/.test(lower)) return 1
-  if (/\b(today|aaj|abhi)\b/.test(lower)) return 0
+  // "day after tomorrow" contains "tomorrow", so it has to be tested first.
+  // Devanagari forms sit alongside the romanised ones: people type either.
+  if (/\b(day after tomorrow|parso|parsu)\b|परसों/.test(lower)) return 2
+  if (/\b(tomorrow|kal)\b|कल/.test(lower)) return 1
+  if (/\b(today|aaj|abhi)\b|आज|अभी/.test(lower)) return 0
 
   const named = WEEKDAYS.findIndex((d) => new RegExp(`\\b${d}\\b`).test(lower))
   if (named >= 0) {
