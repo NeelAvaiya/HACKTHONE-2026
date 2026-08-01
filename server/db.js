@@ -23,7 +23,9 @@ export async function connectDB(seedTickets = [], seedTeam = []) {
       await db.collection('team').insertMany(seedTeam.map((m) => ({ ...m })))
       console.log(`🗄  Seeded ${seedTeam.length} team members into ${DB_NAME}.team`)
     }
-    await db.collection('qa').createIndex({ normalized: 1 })
+    // Cache lookups are keyed by question AND language — same question asked in
+    // Hindi and English are two different cached answers
+    await db.collection('qa').createIndex({ normalized: 1, lang: 1 })
     await db.collection('appointments').createIndex({ date: 1, time: 1, person: 1 })
     console.log(`🗄  MongoDB connected: ${URL}/${DB_NAME}`)
   } catch (err) {

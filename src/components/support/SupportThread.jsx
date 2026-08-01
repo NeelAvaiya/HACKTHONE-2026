@@ -1,5 +1,6 @@
 // WhatsApp-style conversation for one appointment on the support side (props-only)
-import { CheckCircle2, Link2 } from 'lucide-react'
+import { CheckCircle2, Link2, Video } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import MessageBubble from '../chat/MessageBubble.jsx'
 import ReviewForm from '../booking/ReviewForm.jsx'
 import ReviewBlock from '../booking/ReviewBlock.jsx'
@@ -39,7 +40,7 @@ export default function SupportThread({ appt, copy, onDone, onMerge, onKeepSepar
         {appt.mergedClients && (
           <div className="flex justify-center py-1">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-[11px] font-semibold text-violet-700 shadow-sm ring-1 ring-violet-200">
-              <Link2 size={11} /> {appt.mergedClients.length} clients merged — ek hi ticket:{' '}
+              <Link2 size={11} /> {appt.mergedClients.length} clients merged into one ticket:{' '}
               {appt.mergedClients.map((c) => c.split(' ')[0]).join(' + ')}
             </span>
           </div>
@@ -68,7 +69,13 @@ export default function SupportThread({ appt, copy, onDone, onMerge, onKeepSepar
         )}
 
         {appt.status === 'upcoming' && !appt.duplicateOf && (
-          <div className="pl-2">
+          <div className="flex flex-wrap gap-2 pl-2">
+            <Link
+              to={`/support/meeting/${appt.id}`}
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#00a884] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#008f6f]"
+            >
+              <Video size={15} /> {copy.joinLabel}
+            </Link>
             <button
               onClick={() => onDone(appt)}
               className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#00a884] shadow-sm ring-1 ring-black/5 transition-colors hover:bg-[#f0f2f5]"
