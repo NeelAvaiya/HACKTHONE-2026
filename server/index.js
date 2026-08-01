@@ -7,16 +7,23 @@ import cors from 'cors'
 import { loadKnowledge } from './knowledge.js'
 import { connectDB, getDB, normalizeQuestion } from './db.js'
 import { store } from './store.js'
+import { uploads } from './uploads.js'
+import { releaseNotes } from './releases.js'
+import { makeVision } from './vision.js'
 import { availability, toMinutes } from './availability.js'
 import { tickets as seedTickets } from '../src/data/tickets.js'
 import { team as seedTeam } from '../src/data/team.js'
+import { releases as seedReleases } from '../src/data/releases.js'
 
 const app = express()
 app.use(cors())
-app.use(express.json())
+// Uploads mount first: they carry their own (much larger) body-size limit
+app.use('/api', uploads)
+app.use(express.json({ limit: '5mb' }))
 app.use('/api', store)
+app.use('/api', releaseNotes)
 app.use('/api', availability)
-await connectDB(seedTickets, seedTeam)
+await connectDB(seedTickets, seedTeam, seedReleases)
 
 const PORT = process.env.PORT || 3001
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest'
@@ -58,6 +65,9 @@ ${knowledge.text || '(no docs loaded)'}`
 // Reply used whenever the real API can't answer — keeps the demo unbreakable
 const FALLBACK_REPLY =
   'I can help with payroll, attendance, or PMS questions — or set up a call with our team. Could you tell me a bit more?'
+
+// Screenshot questions: same keys, same models, same docs (callGemini applies SYSTEM_PROMPT)
+app.use('/api', makeVision({ apiKeys: API_KEYS, models: [MODEL, 'gemini-flash-lite-latest'], callGemini }))
 
 app.post('/api/chat', async (req, res) => {
   const { message, history = [], lang = 'en' } = req.body || {}

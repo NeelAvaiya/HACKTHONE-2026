@@ -59,6 +59,84 @@ export const botScripts = {
     collectUrgency: ['Blocking everyone', 'Blocking me', 'Can wait'],
   },
 
+  // Identity strip at the top of the chat pane
+  persona: {
+    name: 'AI Syndicate',
+    role: 'Senior. Support Specialist',
+    status: 'Online - Clock In',
+    typing: 'typing…',
+  },
+
+  // Chat pane tabs
+  tabs: { chat: 'Chat', files: 'Files', starred: 'Starred' },
+
+  // Three-dot menus: per message, and for the whole conversation
+  menu: {
+    edit: 'Edit message',
+    delete: 'Delete message',
+    copy: 'Copy text',
+    deleteFile: 'Delete file',
+    searchMessages: 'Search messages',
+    editingLabel: 'Editing message',
+    editedTag: 'edited',
+    deletedToast: '🗑 Message deleted',
+    fileDeletedToast: '🗑 {name} deleted',
+    copiedToast: '📋 Copied to clipboard',
+  },
+
+  // Attachment copy ({name}/{count} filled in at render time)
+  attachment: {
+    received:
+      "📎 Got **{name}** — thanks! It's saved to this conversation, you'll always find it under the **Files** tab.",
+    receivedMany: '📎 Got all {count} files — saved to this conversation. They are listed under the **Files** tab.',
+    inTicketFlow: "📎 Got **{name}** — I'll attach it to your ticket so the engineer sees it right away.",
+    tooLarge: '⚠ {name} is over 15 MB — please share a smaller file or a link.',
+    failed: "⚠ Couldn't upload {name}. {reason}",
+    dropHint: 'Drop files here to send',
+    emptyFiles: 'No files yet — share a screenshot, log or payslip and it will show up here.',
+    emptyStarred: 'Nothing starred yet — tap ★ on any message to keep it here.',
+  },
+
+  // Screenshot flow: the bot asks what to look at, then answers from the docs.
+  // `ask` is the bot speaking, so it mirrors the client's language like smallTalk.
+  vision: {
+    ask: {
+      en: "📸 Got your screenshot. What would you like me to help you with in it? If you've highlighted or marked something, tell me — I'll look right there.",
+      hi: '📸 Screenshot mil gaya. Isme main aapki kya madad karoon? Agar aapne kuch highlight ya mark kiya hai to bata dijiye — main wahin dekhta hoon.',
+      hinglish:
+        '📸 Screenshot mil gaya. Isme main aapki kya help karoon? Agar aapne kuch highlight ya mark kiya hai to batayiye — main wahin dekhta hoon.',
+    },
+    // No booking chip here on purpose — a call is only offered once the docs have failed
+    chips: ['🔍 Explain this error', '📋 Give me the steps'],
+    // Reading failed (bad key, unreadable file) → hand over to a human rather than guess
+    failed:
+      "I couldn't read that screenshot properly. 🙋 Book a quick call and an expert will look at it with you.",
+    // Answer came from the docs → confirm it landed, reusing the didThisSolve chips
+    followUp: 'Did that clear it up?',
+    // Docs answered, client says it still isn't fixed → NOW a call is the right move
+    stillStuck:
+      "Sorry that didn't sort it out. 🙋 Let's put a person on it — book a quick call and an expert will go through your screenshot with you.",
+  },
+
+  // Release notes pushed into the client's chat the moment something goes live
+  release: {
+    toast: '🚀 {title} is now live',
+    intro: "🚀 Heads up — we just shipped an update that affects you. Here's the release note:",
+    liveLabel: 'LIVE',
+    whatsNewLabel: "What's new",
+    affectedLabel: "What's affected",
+    fixesLabel: 'Fixes your tickets',
+    typeLabels: { feature: 'New feature', enhancement: 'Enhancement', fix: 'Fix' },
+    askIfHelp: 'Want me to walk you through anything in this update?',
+    chips: ['✅ Got it, thanks!', '❓ Explain this update'],
+    explainPrefix: 'Explain this release in simple terms: ',
+    // Support-side publisher
+    publishTitle: 'Release notes',
+    publishHint: 'Publishing a note notifies every client inside their chat instantly.',
+    publishCta: '🚀 Publish & notify clients',
+    publishedToast: '🚀 Published — clients are being notified in chat',
+  },
+
   // Chat window banner
   banner: '🌙 Support hours: 9 AM – 6 PM IST · Currently OFF-HOURS · AI Syndicate is online',
 

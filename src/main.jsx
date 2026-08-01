@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { TicketProvider } from './context/TicketContext.jsx'
 import { BookingProvider } from './context/BookingContext.jsx'
+import { ReleaseProvider } from './context/ReleaseContext.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -12,7 +13,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <TicketProvider>
         <BookingProvider>
-          <App />
+          <ReleaseProvider>
+            <App />
+          </ReleaseProvider>
         </BookingProvider>
       </TicketProvider>
     </BrowserRouter>
