@@ -13,9 +13,24 @@ const otherChats = [
 ]
 
 export default function Chat() {
-  const { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot, sendReview } =
-    useChatBot()
+  const {
+    messages,
+    isTyping,
+    toast,
+    pendingUploads,
+    sendMessage,
+    sendAttachment,
+    toggleStar,
+    editMessage,
+    deleteMessage,
+    selectChip,
+    pickOffer,
+    startBooking,
+    changeSlot,
+    sendReview,
+  } = useChatBot()
   const last = messages[messages.length - 1]
+  const lastPreview = last?.text || (last?.attachment ? `📎 ${last.attachment.name}` : 'Say hi 👋')
   const [search, setSearch] = useState('')
   const q = search.trim().toLowerCase()
   const showMain = !q || 'ai syndicate'.includes(q) || (last?.text || '').toLowerCase().includes(q)
@@ -54,7 +69,7 @@ export default function Chat() {
                   <span className="text-[11px] text-[#00a884]">now</span>
                 </div>
                 <p className="truncate text-[13px] text-[#667781]">
-                  {isTyping ? 'typing…' : last?.text || 'Say hi 👋'}
+                  {isTyping ? 'typing…' : lastPreview}
                 </p>
               </div>
             </button>
@@ -86,10 +101,20 @@ export default function Chat() {
 
         <section className="min-w-0 flex-1">
           <ChatWindow
+            persona={botScripts.persona}
+            tabLabels={botScripts.tabs}
+            attachmentCopy={botScripts.attachment}
+            menuLabels={botScripts.menu}
+            releaseCopy={botScripts.release}
             banner={botScripts.banner}
             messages={messages}
             isTyping={isTyping}
+            pendingUploads={pendingUploads}
             onSend={sendMessage}
+            onSendFiles={sendAttachment}
+            onToggleStar={toggleStar}
+            onEditMessage={editMessage}
+            onDeleteMessage={deleteMessage}
             onChipSelect={selectChip}
             onOfferPick={pickOffer}
             onBookStart={startBooking}

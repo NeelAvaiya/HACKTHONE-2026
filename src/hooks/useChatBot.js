@@ -7,8 +7,11 @@ import { parseSlot, looksLikeBooking } from '../utils/parseSlot.js'
 import { matchModule, MODULE_CHIPS } from '../utils/matchModule.js'
 import { resolveLanguage } from '../utils/detectLanguage.js'
 import { askGemini } from '../utils/askGemini.js'
+import { askVision } from '../utils/askVision.js'
+import { uploadFile, deleteUpload, MAX_UPLOAD_BYTES } from '../utils/uploadFile.js'
 import { useTickets } from '../context/TicketContext.jsx'
 import { useBookings } from '../context/BookingContext.jsx'
+import { useReleases } from '../context/ReleaseContext.jsx'
 
 // Client-side text of the dummy meeting summary (support side sees the card version).
 // Always English — only the AI's own answers mirror the client's language.
@@ -34,19 +37,33 @@ const emptyBooking = () => ({ stage: null, category: null, requested: null, offe
 // How a tapped offer is echoed back as the client's own message
 const offerLabel = (offer) => `${offer.time} — ${offer.person}`
 
+// Only these can go to the vision route; anything else is just filed under Files
+const READABLE_BY_MODEL = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/pdf']
+const canRead = (att) => READABLE_BY_MODEL.includes(att?.type)
+
 export function useChatBot() {
   const { tickets, addTicket } = useTickets()
   const { appointments, book, cancel, markNotified, submitReview } = useBookings()
+  const { releases, markNotified: markReleaseNotified } = useReleases()
   const [messages, setMessages] = useState([
-    // bookCta on the greeting keeps "Book an appointment" one click away from message one
-    { id: 1, from: 'bot', text: botScripts.greeting, time: new Date(), bookCta: true },
+    // No bookCta here: a call is offered only after the help docs have failed to solve it
+    { id: 1, from: 'bot', text: botScripts.greeting, time: new Date() },
   ])
   const [isTyping, setIsTyping] = useState(false)
   const [toast, setToast] = useState(null)
+  // Files still uploading — kept out of `messages` so a half-done upload never reaches the DB
+  const [pendingUploads, setPendingUploads] = useState([])
+  const uploadIdRef = useRef(1)
   const idRef = useRef(2)
   const logRef = useRef([]) // plain {from, text} history sent to the Gemini proxy
   const flowRef = useRef({ stage: null, description: '', module: null, forceP1: false })
-  const loadedRef = useRef(false)
+  // The screenshot the client just shared, waiting for them to say what to look at.
+  // `answered` stays true after we reply, so a later "still stuck" knows the docs
+  // already had their turn and it is time to offer a call.
+  const visionRef = useRef({ attachment: null, answered: false })
+  // State, not a ref: effects that must wait for the saved thread (release delivery)
+  // need a re-render once it has arrived
+  const [loaded, setLoaded] = useState(false)
   // Language the client is writing in, updated only by typed messages that carry
   // a signal. Chip taps and bare replies like "9" leave it alone, so a Hindi
   // conversation doesn't flip to English mid-booking.
@@ -64,14 +81,12 @@ export function useChatBot() {
         }
       })
       .catch(() => {})
-      .finally(() => {
-        loadedRef.current = true
-      })
+      .finally(() => setLoaded(true))
   }, [])
 
   // Auto-save the whole thread (debounced) after any change
   useEffect(() => {
-    if (!loadedRef.current) return
+    if (!loaded) return
     const t = setTimeout(() => {
       fetch('/api/messages', {
         method: 'PUT',
@@ -80,7 +95,7 @@ export function useChatBot() {
       }).catch(() => {})
     }, 300)
     return () => clearTimeout(t)
-  }, [messages])
+  }, [messages, loaded])
 
   function push(msg) {
     const entry = { id: idRef.current++, time: new Date(), ...msg }
@@ -102,6 +117,23 @@ export function useChatBot() {
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments])
+
+  // A release that has gone live but hasn't been announced here yet lands in the chat
+  // as a notification. Same deliveredRef guard: StrictMode runs this effect twice.
+  const releasedRef = useRef(new Set())
+  useEffect(() => {
+    if (!loaded) return
+    releases
+      .filter((r) => r.status === 'live' && !r.notified && !releasedRef.current.has(r.id))
+      .forEach((r) => {
+        releasedRef.current.add(r.id)
+        markReleaseNotified(r.id)
+        push({ from: 'bot', text: botScripts.release.intro, release: r })
+        push({ from: 'bot', text: botScripts.release.askIfHelp, chips: botScripts.release.chips })
+        showToast(fill(botScripts.release.toast, { title: r.title }))
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [releases, loaded])
 
   async function botSay(fields) {
     setIsTyping(true)
@@ -327,7 +359,37 @@ export function useChatBot() {
     await startBooking(null)
   }
 
+  // ── screenshots ────────────────────────────────────────────────────────────
+  /**
+   * Answers a question about an image the client shared. Three outcomes, in the order
+   * the client expects them: the docs explain it → steps; the docs don't → book a call.
+   */
+  async function askAboutImage(attachment, question) {
+    visionRef.current = { attachment: null, answered: false }
+    setIsTyping(true)
+    const { reply, covered, failed } = await askVision(
+      attachment.id,
+      question,
+      logRef.current.slice(0, -1),
+      langRef.current
+    )
+    setIsTyping(false)
+
+    if (covered && reply) {
+      push({ from: 'bot', text: reply })
+      visionRef.current = { attachment: null, answered: true }
+      await sleep(400)
+      return botSay({ text: botScripts.vision.followUp, chips: botScripts.chips.didThisSolve })
+    }
+    // Docs say nothing about it, or we never got an answer → hand over to a human
+    push({ from: 'bot', text: failed ? botScripts.vision.failed : botScripts.notCovered, bookCta: true })
+  }
+
   async function handleText(text) {
+    // A screenshot is waiting on a question — this is that question
+    const pendingImage = visionRef.current.attachment
+    if (pendingImage) return askAboutImage(pendingImage, text)
+
     // A booking in progress owns the next reply
     if (bookingRef.current.stage === 'awaitModule') return chooseModule(text)
     if (bookingRef.current.stage === 'awaitSlotChoice' && handleSlotReply(text)) return
@@ -395,6 +457,19 @@ export function useChatBot() {
   function selectChip(option) {
     setMessages((prev) => prev.map((m) => (m.chips ? { ...m, chips: null } : m)))
     push({ from: 'user', text: option })
+
+    // Screenshot chips: the chip itself is the question to ask about the image
+    const pendingImage = visionRef.current.attachment
+    if (pendingImage && botScripts.vision.chips.includes(option)) {
+      return askAboutImage(pendingImage, option)
+    }
+    // Release chips
+    if (option === botScripts.release.chips[0]) return botSay({ text: botScripts.resolved, variant: 'success' })
+    if (option === botScripts.release.chips[1]) {
+      const latest = releases.find((r) => r.status === 'live')
+      return handleText(`${botScripts.release.explainPrefix}${latest?.title || ''}`)
+    }
+
     // Booking's module chips share this handler, so they're checked first
     if (bookingRef.current.stage === 'awaitModule') return chooseModule(option)
     const flow = flowRef.current
@@ -406,11 +481,100 @@ export function useChatBot() {
     } else if (flow.stage === 'urgency') {
       createTicket(SEVERITY_BY_URGENCY[option] || 'P3')
     } else if (option === botScripts.chips.didThisSolve[0]) {
+      visionRef.current = { attachment: null, answered: false }
       botSay({ text: botScripts.resolved, variant: 'success' })
     } else if (option === botScripts.chips.didThisSolve[1]) {
+      // The docs already had their shot at the screenshot → a call is the next step
+      if (visionRef.current.answered) {
+        visionRef.current = { attachment: null, answered: false }
+        return botSay({ text: botScripts.vision.stillStuck, bookCta: true })
+      }
       flowRef.current.stage = 'awaitDescription'
       botSay({ text: botScripts.notSolved })
     }
+  }
+
+  // ── attachments ────────────────────────────────────────────────────────────
+  /**
+   * Uploads each file one at a time (real progress per file), then posts it as a
+   * message. `caption` rides on the first attachment, exactly like WhatsApp, and
+   * is answered by the normal text flow afterwards.
+   */
+  async function sendAttachment(fileList, caption = '') {
+    const files = Array.from(fileList || []).filter(Boolean)
+    if (!files.length) return
+    const text = caption.trim()
+    const sent = []
+
+    for (const file of files) {
+      if (file.size > MAX_UPLOAD_BYTES) {
+        showToast(fill(botScripts.attachment.tooLarge, { name: file.name }))
+        continue
+      }
+      const uid = uploadIdRef.current++
+      setPendingUploads((prev) => [...prev, { uid, name: file.name, size: file.size, progress: 0 }])
+      try {
+        const attachment = await uploadFile(file, (progress) =>
+          setPendingUploads((prev) => prev.map((u) => (u.uid === uid ? { ...u, progress } : u)))
+        )
+        const withCaption = text && !sent.length ? { text } : {}
+        push({ from: 'user', attachment, ...withCaption })
+        sent.push(attachment)
+      } catch (err) {
+        showToast(fill(botScripts.attachment.failed, { name: file.name, reason: err.message }))
+      } finally {
+        setPendingUploads((prev) => prev.filter((u) => u.uid !== uid))
+      }
+    }
+
+    if (!sent.length) return
+    const readable = sent.find(canRead)
+
+    // Screenshot + caption: the caption already says what to look at
+    if (readable && text) return askAboutImage(readable, text)
+    // A caption on a plain file is a normal question
+    if (text) return handleText(text)
+    // Screenshot on its own: ask what they need from it before burning a vision call
+    if (readable) {
+      visionRef.current = { attachment: readable, answered: false }
+      const ask = botScripts.vision.ask[langRef.current] || botScripts.vision.ask.en
+      return botSay({ text: ask, chips: botScripts.vision.chips })
+    }
+    // Mid-ticket the file belongs to the ticket, so acknowledge without derailing the flow
+    if (flowRef.current.stage) {
+      return botSay({ text: fill(botScripts.attachment.inTicketFlow, { name: sent[0].name }) })
+    }
+    const ack =
+      sent.length === 1
+        ? fill(botScripts.attachment.received, { name: sent[0].name })
+        : fill(botScripts.attachment.receivedMany, { count: sent.length })
+    return botSay({ text: ack })
+  }
+
+  // Star / unstar any message; the debounced auto-save persists it
+  function toggleStar(id) {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, starred: !m.starred } : m)))
+  }
+
+  // ── edit / delete ──────────────────────────────────────────────────────────
+  /** Rewrites the text of an already-sent message; the bot's earlier reply stands. */
+  function editMessage(id, text) {
+    const clean = text.trim()
+    if (!clean) return
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, text: clean, edited: true } : m)))
+    // Keep the Gemini history in step so follow-ups see the corrected wording
+    const idx = logRef.current.findIndex((l) => l.text === messages.find((m) => m.id === id)?.text)
+    if (idx !== -1) logRef.current[idx] = { ...logRef.current[idx], text: clean }
+  }
+
+  /** Removes a message, and the stored file with it when it carried an attachment. */
+  function deleteMessage(id) {
+    const target = messages.find((m) => m.id === id)
+    if (!target) return
+    if (target.attachment) deleteUpload(target.attachment)
+    setMessages((prev) => prev.filter((m) => m.id !== id))
+    if (target.text) logRef.current = logRef.current.filter((l) => l.text !== target.text)
+    showToast(target.attachment ? fill(botScripts.menu.fileDeletedToast, { name: target.attachment.name }) : botScripts.menu.deletedToast)
   }
 
   // Client submits the post-meeting review from inside the chat
@@ -421,5 +585,20 @@ export function useChatBot() {
     botSay({ text: botScripts.reviewThanks })
   }
 
-  return { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot, sendReview }
+  return {
+    messages,
+    isTyping,
+    toast,
+    pendingUploads,
+    sendMessage,
+    sendAttachment,
+    toggleStar,
+    editMessage,
+    deleteMessage,
+    selectChip,
+    pickOffer,
+    startBooking,
+    changeSlot,
+    sendReview,
+  }
 }

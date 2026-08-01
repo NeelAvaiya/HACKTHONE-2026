@@ -6,7 +6,7 @@ const DB_NAME = process.env.MONGO_DB || 'HEKATHONE'
 
 let db = null
 
-export async function connectDB(seedTickets = [], seedTeam = []) {
+export async function connectDB(seedTickets = [], seedTeam = [], seedReleases = []) {
   try {
     const client = new MongoClient(URL, { serverSelectionTimeoutMS: 2500 })
     await client.connect()
@@ -22,6 +22,12 @@ export async function connectDB(seedTickets = [], seedTeam = []) {
     if (!teamCount && seedTeam.length) {
       await db.collection('team').insertMany(seedTeam.map((m) => ({ ...m })))
       console.log(`🗄  Seeded ${seedTeam.length} team members into ${DB_NAME}.team`)
+    }
+    // Release notes the clients get notified about inside their chat
+    const releaseCount = await db.collection('releases').countDocuments()
+    if (!releaseCount && seedReleases.length) {
+      await db.collection('releases').insertMany(seedReleases.map((r) => ({ ...r })))
+      console.log(`🗄  Seeded ${seedReleases.length} release notes into ${DB_NAME}.releases`)
     }
     // Cache lookups are keyed by question AND language — same question asked in
     // Hindi and English are two different cached answers
