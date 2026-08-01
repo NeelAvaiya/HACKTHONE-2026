@@ -123,6 +123,21 @@ export const botScripts = {
   reviewOptions: ['😍 Great', '🙂 Okay', '😕 Poor'],
   reviewStarsLabel: 'Overall rating',
   reviewSubmitLabel: 'Submit review',
+
+  // Shared review page (both sides)
+  reviewCtaLabel: '⭐ Give your review',
+  reviewViewLabel: '⭐ View reviews',
+  reviewPageTitle: 'How did the meeting go?',
+  reviewPageDone: 'Thanks — your review is in.',
+  reviewWaiting: 'Waiting for {name} to submit their review.',
+  reviewNotReady: 'This review opens once the meeting is marked complete.',
+  reviewBackClient: 'Back to chat',
+  reviewBackSupport: 'Back to inbox',
+  reviewsTabEmpty: 'No completed meetings yet. Reviews appear here after a call is marked done.',
+
+  // Client-side "My meetings" page
+  meetingsIntro: 'Your booked calls, and the summary and review for each one once it is done.',
+  meetingsEmpty: 'No completed meetings yet. After a call, the summary and your review appear here.',
   reviewThanks: 'Thank you for the feedback! ⭐ It helps us make AI Syndicate better.',
 
   // When the help docs don't cover a question → route to appointment booking

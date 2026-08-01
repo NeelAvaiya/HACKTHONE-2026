@@ -1,16 +1,16 @@
 // WhatsApp Web conversation pane: header + doodle wallpaper + messages + input bar (props-only)
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Bot, Search, MoreVertical, Smile, Plus, SendHorizontal } from 'lucide-react'
 import MessageBubble from './MessageBubble.jsx'
 import TypingIndicator from './TypingIndicator.jsx'
 import QuickReplies from './QuickReplies.jsx'
 import TicketCard from './TicketCard.jsx'
 import SlotPicker from './SlotPicker.jsx'
-import ReviewForm from '../booking/ReviewForm.jsx'
 import EmojiPicker from './EmojiPicker.jsx'
 import SearchBar from './SearchBar.jsx'
 
-export default function ChatWindow({ banner, messages, isTyping, onSend, onChipSelect, onOfferPick, onBookStart, onChangeSlot, bookCtaLabel, changeSlotLabel, reviewConfig, onReviewSubmit }) {
+export default function ChatWindow({ banner, messages, isTyping, onSend, onChipSelect, onOfferPick, onBookStart, onChangeSlot, bookCtaLabel, changeSlotLabel, reviewCtaLabel }) {
   const [draft, setDraft] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -115,10 +115,13 @@ export default function ChatWindow({ banner, messages, isTyping, onSend, onChipS
                 <SlotPicker booking={m.booking} onChangeSlot={onChangeSlot} changeLabel={changeSlotLabel} />
               </div>
             )}
-            {m.reviewFor && (
-              <div className="pl-2">
-                <ReviewForm {...reviewConfig} onSubmit={(review) => onReviewSubmit(m.reviewFor, review)} />
-              </div>
+            {m.reviewCta && (
+              <Link
+                to={`/review/${m.reviewCta}/client`}
+                className="ml-2 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#00a884] shadow-sm ring-1 ring-black/5 transition-colors hover:bg-[#f0f2f5]"
+              >
+                {reviewCtaLabel}
+              </Link>
             )}
             {m.bookCta && (
               <button

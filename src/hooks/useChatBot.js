@@ -6,20 +6,10 @@ import { matchIntent, matchSmallTalk } from '../utils/matchIntent.js'
 import { parseSlot, looksLikeBooking } from '../utils/parseSlot.js'
 import { matchModule, MODULE_CHIPS } from '../utils/matchModule.js'
 import { resolveLanguage } from '../utils/detectLanguage.js'
+import { meetingSummaryText } from '../utils/meetingSummary.js'
 import { askGemini } from '../utils/askGemini.js'
 import { useTickets } from '../context/TicketContext.jsx'
 import { useBookings } from '../context/BookingContext.jsx'
-
-// Client-side text of the dummy meeting summary (support side sees the card version).
-// Always English — only the AI's own answers mirror the client's language.
-function summaryText(appt) {
-  const first = appt.person.split(' ')[0]
-  const discussed = botScripts.meetingSummary.discussed.map((d) => `• ${d}`).join('\n')
-  const steps = botScripts.meetingSummary.nextSteps
-    .map((s) => `• ${s.replace('{expert}', first)}`)
-    .join('\n')
-  return `📋 **Meeting Summary** — your call with ${first} is complete ✅\n\n**Discussed:**\n${discussed}\n\n**Next steps:**\n${steps}`
-}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const thinkTime = () => 800 + Math.random() * 700
@@ -36,7 +26,7 @@ const offerLabel = (offer) => `${offer.time} — ${offer.person}`
 
 export function useChatBot() {
   const { tickets, addTicket } = useTickets()
-  const { appointments, book, cancel, markNotified, submitReview } = useBookings()
+  const { appointments, book, cancel, markNotified } = useBookings()
   const [messages, setMessages] = useState([
     // bookCta on the greeting keeps "Book an appointment" one click away from message one
     { id: 1, from: 'bot', text: botScripts.greeting, time: new Date(), bookCta: true },
@@ -97,8 +87,8 @@ export function useChatBot() {
       .forEach((a) => {
         deliveredRef.current.add(a.id)
         markNotified(a.id)
-        push({ from: 'bot', text: summaryText(a) })
-        push({ from: 'bot', text: botScripts.reviewIntro, reviewFor: a.id })
+        push({ from: 'bot', text: meetingSummaryText(a) })
+        push({ from: 'bot', text: botScripts.reviewIntro, reviewCta: a.id })
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointments])
@@ -413,13 +403,6 @@ export function useChatBot() {
     }
   }
 
-  // Client submits the post-meeting review from inside the chat
-  function sendReview(apptId, review) {
-    setMessages((prev) => prev.map((m) => (m.reviewFor ? { ...m, reviewFor: null } : m)))
-    submitReview(apptId, 'client', review)
-    push({ from: 'user', text: `${'★'.repeat(review.stars)}${'☆'.repeat(5 - review.stars)} — review submitted` })
-    botSay({ text: botScripts.reviewThanks })
-  }
-
-  return { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot, sendReview }
+  // Reviewing happens on /review/:id/client now — the chat only links to it
+  return { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot }
 }
