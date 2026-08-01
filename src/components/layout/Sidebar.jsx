@@ -1,10 +1,11 @@
-// Dashboard sidebar: tab buttons (Ticket Queue / Feature Requests / Meeting Brief)
-import { Inbox, Lightbulb, FileText, Rocket } from 'lucide-react'
+// Dashboard sidebar: tab buttons (Ticket Queue / Feature Requests / Meeting Brief / Reviews / Release Notes)
+import { Inbox, Lightbulb, FileText, MessageSquareHeart, Rocket } from 'lucide-react'
 
 const tabs = [
   { key: 'queue', label: 'Ticket Queue', icon: Inbox },
   { key: 'features', label: 'Feature Requests', icon: Lightbulb },
   { key: 'brief', label: 'Meeting Brief', icon: FileText },
+  { key: 'reviews', label: 'Reviews', icon: MessageSquareHeart },
   { key: 'releases', label: 'Release Notes', icon: Rocket },
 ]
 

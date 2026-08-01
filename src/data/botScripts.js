@@ -208,7 +208,6 @@ export const botScripts = {
   reviewViewLabel: '⭐ View reviews',
   reviewPageTitle: 'How did the meeting go?',
   reviewPageDone: 'Thanks — your review is in.',
-  reviewWaiting: 'Waiting for {name} to submit their review.',
   reviewNotReady: 'This review opens once the meeting is marked complete.',
   reviewBackClient: 'Back to chat',
   reviewBackSupport: 'Back to inbox',

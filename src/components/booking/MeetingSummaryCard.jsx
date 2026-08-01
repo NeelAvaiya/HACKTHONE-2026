@@ -22,7 +22,7 @@ function Rating({ label, review, waiting }) {
 }
 
 export default function MeetingSummaryCard({ appt, copy }) {
-  const { expert, discussed, nextSteps } = meetingSummary(appt, copy)
+  const { discussed, nextSteps } = meetingSummary(appt, copy)
   const mine = appt.reviews?.client
 
   return (
@@ -70,10 +70,9 @@ export default function MeetingSummaryCard({ appt, copy }) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-4">
-          <Rating label="Your review" review={mine} waiting="not given yet" />
-          <Rating label={`${expert}'s review`} review={appt.reviews?.support} waiting="waiting" />
-        </div>
+        {/* Only the client's own rating — the expert's review is theirs, and is
+            pooled with this one on the support Dashboard */}
+        <Rating label="Your review" review={mine} waiting="not given yet" />
         <Link
           to={`/review/${appt.id}/client`}
           className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${

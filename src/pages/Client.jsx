@@ -2,29 +2,30 @@
 // The badge counts meetings still waiting on the client's review, so a pending
 // review is visible without depending on a chat message that may have scrolled away.
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { MessageSquare, CalendarCheck } from 'lucide-react'
+import { MessageSquare, CalendarCheck, Sparkles } from 'lucide-react'
 import { useBookings } from '../context/BookingContext.jsx'
 import { pendingReviews } from '../utils/reviewStats.js'
 
 const tabs = [
   { to: '/', label: 'Chat', icon: MessageSquare },
   { to: '/meetings', label: 'My Meetings', icon: CalendarCheck },
+  { to: '/auto-assign', label: 'Auto-assign', icon: Sparkles },
 ]
 
 export default function Client() {
   const { appointments } = useBookings()
   const pending = pendingReviews(appointments, 'client').length
-  // The chat renders at both "/" and "/chat", so its tab is "anything that
-  // isn't Meetings" rather than an exact path match
+  // The chat renders at both "/" and "/chat", so it is the fallback tab rather
+  // than an exact path match
   const { pathname } = useLocation()
-  const onMeetings = pathname.startsWith('/meetings')
+  const activeTab = tabs.find((t) => t.to !== '/' && pathname.startsWith(t.to))?.to || '/'
 
   return (
     <div>
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl gap-1 px-4 py-2">
           {tabs.map(({ to, label, icon: Icon }) => {
-            const isActive = to === '/meetings' ? onMeetings : !onMeetings
+            const isActive = to === activeTab
             return (
               <Link
                 key={to}

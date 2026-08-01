@@ -1,15 +1,17 @@
-// "/dashboard" — sidebar + 3 tabs (queue / feature requests / meeting brief)
+// "/dashboard" — sidebar + 5 tabs (queue / feature requests / meeting brief / reviews / release notes)
 import { useState } from 'react'
 import Sidebar from '../components/layout/Sidebar.jsx'
 import TicketQueue from '../components/dashboard/TicketQueue.jsx'
 import FeatureRequests from '../components/dashboard/FeatureRequests.jsx'
 import MeetingBrief from '../components/dashboard/MeetingBrief.jsx'
+import ReviewsPanel from '../components/dashboard/ReviewsPanel.jsx'
 import ReleaseNotes from '../components/dashboard/ReleaseNotes.jsx'
 
 const titles = {
   queue: 'Ticket Queue',
   features: 'Feature Requests',
   brief: 'Pre-Meeting Brief',
+  reviews: 'Meeting Reviews',
   releases: 'Release Notes',
 }
 
@@ -23,6 +25,7 @@ export default function Dashboard() {
         {activeTab === 'queue' && <TicketQueue />}
         {activeTab === 'features' && <FeatureRequests />}
         {activeTab === 'brief' && <MeetingBrief />}
+        {activeTab === 'reviews' && <ReviewsPanel />}
         {activeTab === 'releases' && <ReleaseNotes />}
       </section>
     </main>
