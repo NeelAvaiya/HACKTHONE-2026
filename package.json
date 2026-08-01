@@ -14,6 +14,7 @@
     "test:call": "node server/test-call-script.js",
     "test:lang": "node server/test-language.js",
     "test:reviews": "node server/test-review-stats.js",
+    "test:autoassign": "node server/test-auto-assign.js",
     "dev:all": "concurrently -n web,api -c blue,green \"npm run dev\" \"npm run server\"",
     "build": "vite build",
     "preview": "vite preview"

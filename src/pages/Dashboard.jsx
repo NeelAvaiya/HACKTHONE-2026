@@ -4,11 +4,13 @@ import Sidebar from '../components/layout/Sidebar.jsx'
 import TicketQueue from '../components/dashboard/TicketQueue.jsx'
 import FeatureRequests from '../components/dashboard/FeatureRequests.jsx'
 import MeetingBrief from '../components/dashboard/MeetingBrief.jsx'
+import ReviewsPanel from '../components/dashboard/ReviewsPanel.jsx'
 
 const titles = {
   queue: 'Ticket Queue',
   features: 'Feature Requests',
   brief: 'Pre-Meeting Brief',
+  reviews: 'Meeting Reviews',
 }
 
 export default function Dashboard() {
@@ -21,6 +23,7 @@ export default function Dashboard() {
         {activeTab === 'queue' && <TicketQueue />}
         {activeTab === 'features' && <FeatureRequests />}
         {activeTab === 'brief' && <MeetingBrief />}
+        {activeTab === 'reviews' && <ReviewsPanel />}
       </section>
     </main>
   )
