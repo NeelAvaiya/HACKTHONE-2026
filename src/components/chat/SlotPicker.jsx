@@ -1,5 +1,6 @@
 // Two modes (props-only): a list of {time, person} offers, or the booking confirmation card.
 import Card from '../common/Card.jsx'
+import Avatar from '../common/Avatar.jsx'
 
 export default function SlotPicker({ offers = [], dayLabel, onPick, booking, onChangeSlot, changeLabel }) {
   if (booking) {
@@ -8,9 +9,12 @@ export default function SlotPicker({ offers = [], dayLabel, onPick, booking, onC
         <p className="text-sm font-bold text-emerald-700">✅ Meeting booked</p>
         <p className="mt-2 text-sm font-medium text-slate-900">🕒 {booking.slot}</p>
         {booking.person && (
-          <p className="mt-1 text-sm text-slate-700">
-            👤 {booking.person}
-            {booking.category ? ` — ${booking.category} expert` : ''}
+          <p className="mt-1 flex items-center gap-2 text-sm text-slate-700">
+            <Avatar name={booking.person} size={22} />
+            <span>
+              {booking.person}
+              {booking.category ? ` — ${booking.category} expert` : ''}
+            </span>
           </p>
         )}
         <p className="mt-1 text-sm text-blue-600 underline">🔗 {booking.link}</p>
@@ -42,7 +46,10 @@ export default function SlotPicker({ offers = [], dayLabel, onPick, booking, onC
             className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2.5 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50"
           >
             <span className="text-sm font-bold text-slate-900">{offer.time}</span>
-            <span className="text-xs text-slate-500">{offer.person}</span>
+            <span className="flex items-center gap-2 text-xs text-slate-500">
+              <Avatar name={offer.person} size={24} />
+              {offer.person}
+            </span>
           </button>
         ))}
       </div>

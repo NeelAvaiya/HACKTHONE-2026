@@ -1,6 +1,7 @@
 // WhatsApp Web conversation pane: header + doodle wallpaper + messages + input bar (props-only)
 import { useEffect, useRef, useState } from 'react'
-import { Bot, Search, MoreVertical, Smile, Plus, SendHorizontal } from 'lucide-react'
+import { Search, MoreVertical, Smile, Plus, SendHorizontal } from 'lucide-react'
+import Avatar from '../common/Avatar.jsx'
 import MessageBubble from './MessageBubble.jsx'
 import TypingIndicator from './TypingIndicator.jsx'
 import QuickReplies from './QuickReplies.jsx'
@@ -55,9 +56,7 @@ export default function ChatWindow({ banner, messages, isTyping, onSend, onChipS
   return (
     <div className="wa-font flex h-full flex-col">
       <div className="flex items-center gap-3 border-l border-black/5 bg-[#f0f2f5] px-4 py-2.5">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#00a884] text-white">
-          <Bot size={22} />
-        </span>
+        <Avatar name="AI Syndicate" size={40} />
         <div className="flex-1 leading-tight">
           <p className="text-[15px] font-semibold text-[#111b21]">AI Syndicate</p>
           <p className="text-xs text-[#667781]">{isTyping ? 'typing…' : 'online'}</p>

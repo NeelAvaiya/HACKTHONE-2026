@@ -1,8 +1,7 @@
 // Team day-grid (props-only): experts down the side, time slots across the top.
 // Three cell states — booked (client name, clickable), busy (blocked), free.
 import { timeSlots } from '../../data/team.js'
-
-const initialsOf = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2)
+import Avatar from '../common/Avatar.jsx'
 
 export default function TeamDayGrid({ team = [], appointments = [], dayIdx = 0, date, onSelectBooking }) {
   const busyAt = (member, time) => (member.busy?.[dayIdx] || member.busy?.[String(dayIdx)] || []).includes(time)
@@ -31,9 +30,7 @@ export default function TeamDayGrid({ team = [], appointments = [], dayIdx = 0, 
             <tr key={member.name}>
               <td className="w-40 pr-2">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">
-                    {initialsOf(member.name)}
-                  </span>
+                  <Avatar name={member.name} size={28} />
                   <div className="min-w-0">
                     <p className="truncate text-xs font-bold text-slate-900">{member.name}</p>
                     <p className="truncate text-[10px] text-slate-400">{member.categories?.join(' · ')}</p>
