@@ -1,0 +1,410 @@
+// Chat brain: messages state, keyword matching, flow state machine, typing delays
+import { useEffect, useRef, useState } from 'react'
+import { botScripts } from '../data/botScripts.js'
+import { team } from '../data/team.js'
+import { matchIntent } from '../utils/matchIntent.js'
+import { parseSlot, looksLikeBooking } from '../utils/parseSlot.js'
+import { matchModule, MODULE_CHIPS } from '../utils/matchModule.js'
+import { askGemini } from '../utils/askGemini.js'
+import { useTickets } from '../context/TicketContext.jsx'
+import { useBookings } from '../context/BookingContext.jsx'
+
+// Client-side text of the dummy meeting summary (support side sees the card version)
+function summaryText(appt) {
+  const first = appt.person.split(' ')[0]
+  const discussed = botScripts.meetingSummary.discussed.map((d) => `• ${d}`).join('\n')
+  const steps = botScripts.meetingSummary.nextSteps
+    .map((s) => `• ${s.replace('{expert}', first)}`)
+    .join('\n')
+  return `📋 **Meeting Summary** — your call with ${first} is complete ✅\n\n**Discussed:**\n${discussed}\n\n**Next steps:**\n${steps}`
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const thinkTime = () => 800 + Math.random() * 700
+const SEVERITY_BY_URGENCY = { 'Blocking everyone': 'P1', 'Blocking me': 'P2', 'Can wait': 'P3' }
+
+const assigneeFor = (module) => team.find((m) => m.skills.includes(module))?.name || 'Rohit Sharma'
+
+// requested: {dayIdx, time} the client asked for, or null on the guided path.
+// day: the day the pending offers belong to (the server may roll forward).
+const emptyBooking = () => ({ stage: null, category: null, requested: null, offers: [], day: 0, reAsked: false })
+
+// How a tapped offer is echoed back as the client's own message
+const offerLabel = (offer) => `${offer.time} — ${offer.person}`
+
+export function useChatBot() {
+  const { tickets, addTicket } = useTickets()
+  const { appointments, book, cancel, markNotified, submitReview } = useBookings()
+  const [messages, setMessages] = useState([
+    // bookCta on the greeting keeps "Book an appointment" one click away from message one
+    { id: 1, from: 'bot', text: botScripts.greeting, time: new Date(), bookCta: true },
+  ])
+  const [isTyping, setIsTyping] = useState(false)
+  const [toast, setToast] = useState(null)
+  const idRef = useRef(2)
+  const logRef = useRef([]) // plain {from, text} history sent to the Gemini proxy
+  const flowRef = useRef({ stage: null, description: '', module: null, forceP1: false })
+  const loadedRef = useRef(false)
+
+  // Restore the persisted conversation on mount — refresh no longer clears the chat
+  useEffect(() => {
+    fetch('/api/messages')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length) {
+          setMessages(data)
+          idRef.current = Math.max(...data.map((m) => m.id || 0)) + 1
+          logRef.current = data.filter((m) => m.text).map((m) => ({ from: m.from, text: m.text }))
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        loadedRef.current = true
+      })
+  }, [])
+
+  // Auto-save the whole thread (debounced) after any change
+  useEffect(() => {
+    if (!loadedRef.current) return
+    const t = setTimeout(() => {
+      fetch('/api/messages', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(messages),
+      }).catch(() => {})
+    }, 300)
+    return () => clearTimeout(t)
+  }, [messages])
+
+  function push(msg) {
+    const entry = { id: idRef.current++, time: new Date(), ...msg }
+    setMessages((prev) => [...prev, entry])
+    if (entry.text) logRef.current.push({ from: entry.from, text: entry.text })
+  }
+
+  // When the support person marks a meeting done, deliver the summary to the client here.
+  // deliveredRef also guards against React StrictMode running this effect twice.
+  const deliveredRef = useRef(new Set())
+  useEffect(() => {
+    appointments
+      .filter((a) => a.status === 'done' && !a.notified && !deliveredRef.current.has(a.id))
+      .forEach((a) => {
+        deliveredRef.current.add(a.id)
+        markNotified(a.id)
+        push({ from: 'bot', text: summaryText(a) })
+        push({ from: 'bot', text: botScripts.reviewIntro, reviewFor: a.id })
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointments])
+
+  async function botSay(fields) {
+    setIsTyping(true)
+    await sleep(thinkTime())
+    setIsTyping(false)
+    push({ from: 'bot', ...fields })
+  }
+
+  function showToast(text) {
+    setToast(text)
+    setTimeout(() => setToast(null), 5000)
+  }
+
+  async function askModule() {
+    await botSay({ text: botScripts.questions.collectModule, chips: botScripts.chips.collectModule })
+  }
+
+  async function startTicketFlow(intent, text) {
+    const script = botScripts.intents.find((i) => i.intent === intent)
+    flowRef.current = { stage: 'module', description: text, module: null, forceP1: intent === 'p1Escalation' }
+    await botSay({ text: script.responses[0] })
+    await sleep(400)
+    await askModule()
+  }
+
+  async function createTicket(severity) {
+    const flow = flowRef.current
+    // Next SUP number follows whatever is already in the (DB-backed) queue
+    const nums = tickets.map((t) => parseInt((t.id || '').replace(/\D/g, ''), 10) || 0)
+    const ticket = {
+      id: `SUP-${Math.max(1042, ...nums) + 1}`,
+      title: flow.description.length > 60 ? flow.description.slice(0, 57) + '…' : flow.description,
+      client: 'Nexara Tech',
+      module: flow.module,
+      severity,
+      status: 'Open',
+      assignee: assigneeFor(flow.module),
+      createdBy: 'bot',
+      createdAt: new Date().toISOString(),
+      similarTo: null,
+      eta: botScripts.etaBySeverity[severity],
+    }
+    flowRef.current = { stage: null, description: '', module: null, forceP1: false }
+    addTicket(ticket)
+    await botSay({ text: botScripts.ticketCreated, ticket })
+    if (severity === 'P1') showToast(botScripts.p1Alert)
+  }
+
+  // ── booking flow: module → offers → book ───────────────────────────────────
+  const bookingRef = useRef(emptyBooking())
+
+  const fill = (template, values) =>
+    Object.entries(values).reduce((acc, [k, v]) => acc.replaceAll(`{${k}}`, v), template)
+
+  async function fetchAvailability(category, requested) {
+    const params = new URLSearchParams({ category })
+    if (requested?.dayIdx != null) params.set('day', String(requested.dayIdx))
+    if (requested?.time) params.set('time', requested.time)
+    try {
+      const r = await fetch(`/api/availability?${params}`)
+      return await r.json()
+    } catch {
+      return null
+    }
+  }
+
+  // Gemini fallback for phrasings the regex can't read. A miss is not an error —
+  // the flow just continues without a requested time.
+  async function parseSlotRemote(text) {
+    try {
+      const r = await fetch('/api/parse-slot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      })
+      return await r.json()
+    } catch {
+      return null
+    }
+  }
+
+  /** Entry point for both the CTA button and a typed "book at 8". */
+  async function startBooking(requested = null) {
+    bookingRef.current = { ...emptyBooking(), stage: 'awaitModule', requested }
+    await botSay({ text: botScripts.booking.askModule, chips: MODULE_CHIPS })
+  }
+
+  async function chooseModule(text) {
+    const flow = bookingRef.current
+    const category = matchModule(text)
+    if (!category) {
+      // Ask once more, then stop nagging and treat it as Other
+      if (!flow.reAsked) {
+        flow.reAsked = true
+        return botSay({ text: botScripts.booking.moduleUnclear, chips: MODULE_CHIPS })
+      }
+      flow.category = 'Other'
+    } else {
+      flow.category = category
+    }
+    return offerSlots()
+  }
+
+  function offersIntro(data, category) {
+    const values = { time: data.requested, day: data.dayLabel, module: category }
+    if (data.requested && !data.inHours) return fill(botScripts.booking.outOfHours, values)
+    if (data.rolledToDay != null) return fill(botScripts.booking.rolledForward, values)
+    if (data.requested) return fill(botScripts.booking.nearestTo, values)
+    return fill(botScripts.booking.freeNow, values)
+  }
+
+  async function offerSlots() {
+    const flow = bookingRef.current
+    setIsTyping(true)
+    const data = await fetchAvailability(flow.category, flow.requested)
+    setIsTyping(false)
+
+    if (!data) {
+      bookingRef.current = emptyBooking()
+      return botSay({ text: botScripts.booking.unavailable })
+    }
+    // The exact time asked for is open → skip the offer step entirely
+    if (data.exact?.length) return bookOffer(data.exact[0], data.day)
+    if (!data.alternatives?.length) {
+      bookingRef.current = emptyBooking()
+      return botSay({ text: botScripts.booking.noSlots })
+    }
+
+    flow.stage = 'awaitSlotChoice'
+    flow.offers = data.alternatives
+    flow.day = data.day
+    await botSay({
+      text: offersIntro(data, flow.category),
+      // `day` rides along on the message so a reloaded conversation still books
+      // against the right date, even though the in-memory flow is gone
+      slotOffers: { dayLabel: data.dayLabel, day: data.day, offers: data.alternatives },
+    })
+  }
+
+  async function bookOffer(offer, dayIdx = 0) {
+    const flow = bookingRef.current
+    setMessages((prev) => prev.map((m) => (m.slotOffers ? { ...m, slotOffers: null } : m)))
+    setIsTyping(true)
+    const result = await book({
+      dayIdx,
+      time: offer.time,
+      person: offer.person,
+      category: flow.category || offer.category,
+    })
+    setIsTyping(false)
+
+    // Someone else took it between the offer and the click
+    if (result?.conflict) {
+      if (!result.alternatives?.length) {
+        bookingRef.current = emptyBooking()
+        return botSay({ text: botScripts.booking.noSlots })
+      }
+      flow.stage = 'awaitSlotChoice'
+      flow.offers = result.alternatives
+      return botSay({
+        text: botScripts.booking.taken,
+        slotOffers: { day: dayIdx, offers: result.alternatives },
+      })
+    }
+    if (!result) {
+      bookingRef.current = emptyBooking()
+      return botSay({ text: botScripts.booking.failed })
+    }
+
+    bookingRef.current = emptyBooking()
+    const firstName = result.person.split(' ')[0]
+    await botSay({
+      text: fill(botScripts.bookingConfirmed, { expert: firstName, slot: result.slot }),
+      booking: {
+        id: result.id,
+        slot: result.slot,
+        person: result.person,
+        category: result.category,
+        link: botScripts.meetLink,
+        lines: botScripts.bookingLines.map((l) => l.replace('{expert}', firstName)),
+      },
+    })
+  }
+
+  /** Typed reply while offers are pending. Returns false if it wasn't about the offers. */
+  function handleSlotReply(text) {
+    const flow = bookingRef.current
+    const parsed = parseSlot(text)
+    const byTime = parsed.time && flow.offers.find((o) => o.time === parsed.time)
+    if (byTime) {
+      bookOffer(byTime, flow.day)
+      return true
+    }
+    const lower = text.toLowerCase()
+    const byName = flow.offers.find((o) => o.person.toLowerCase().split(' ').some((w) => lower.includes(w)))
+    if (byName) {
+      bookOffer(byName, flow.day)
+      return true
+    }
+    // A different time is a new request, not an error — keep the chosen module
+    if (parsed.confident) {
+      flow.requested = { dayIdx: parsed.dayIdx, time: parsed.time }
+      offerSlots()
+      return true
+    }
+    bookingRef.current = emptyBooking()
+    return false
+  }
+
+  // `day` comes from the message the offer was rendered on; the in-memory flow is
+  // only a fallback for offers made in this session.
+  function pickOffer(offer, day) {
+    push({ from: 'user', text: `📅 ${offerLabel(offer)}` })
+    bookOffer(offer, day ?? bookingRef.current.day)
+  }
+
+  // "Change slot" on the confirmation card: free the slot and re-offer
+  async function changeSlot(appointmentId) {
+    setMessages((prev) =>
+      prev.map((m) => (m.booking?.id === appointmentId ? { ...m, booking: { ...m.booking, done: true } } : m))
+    )
+    cancel(appointmentId)
+    await startBooking(null)
+  }
+
+  async function handleText(text) {
+    // A booking in progress owns the next reply
+    if (bookingRef.current.stage === 'awaitModule') return chooseModule(text)
+    if (bookingRef.current.stage === 'awaitSlotChoice' && handleSlotReply(text)) return
+
+    if (flowRef.current.stage === 'awaitDescription') {
+      flowRef.current = { stage: 'module', description: text, module: null, forceP1: false }
+      return askModule()
+    }
+    // Typing instead of clicking chips abandons a half-done ticket flow cleanly
+    if (flowRef.current.stage) {
+      flowRef.current = { stage: null, description: '', module: null, forceP1: false }
+    }
+    const intent = matchIntent(text)
+
+    // Booking request: use the time if one was given, otherwise go straight to modules.
+    // Guarded to `fallback` so it can't hijack an error report that mentions "call".
+    if (intent === 'meeting' || (intent === 'fallback' && looksLikeBooking(text))) {
+      const parsed = parseSlot(text)
+      if (parsed.confident) return startBooking({ dayIdx: parsed.dayIdx, time: parsed.time })
+      setIsTyping(true)
+      const remote = await parseSlotRemote(text)
+      setIsTyping(false)
+      return startBooking(remote?.confident ? { dayIdx: remote.dayIdx, time: remote.time } : null)
+    }
+
+    if (intent === 'selfResolve') {
+      const script = botScripts.intents.find((i) => i.intent === 'selfResolve')
+      await botSay({ text: script.responses[0], screenshot: botScripts.screenshotCaption })
+      await sleep(500)
+      await botSay({ text: botScripts.questions.didThisSolve, chips: botScripts.chips.didThisSolve })
+    } else if (intent === 'autoTicket' || intent === 'p1Escalation') {
+      await startTicketFlow(intent, text)
+    } else {
+      setIsTyping(true)
+      const { reply, covered } = await askGemini(text, logRef.current.slice(0, -1))
+      setIsTyping(false)
+      if (covered) {
+        push({ from: 'bot', text: reply })
+      } else {
+        // Docs don't answer this → hand off to the support team via booking page
+        push({ from: 'bot', text: botScripts.notCovered, bookCta: true })
+      }
+    }
+  }
+
+  function sendMessage(text) {
+    const clean = text.trim()
+    if (!clean || isTyping) return
+    // Typed input retires any pending chips so old choices can't fire later
+    setMessages((prev) => prev.map((m) => (m.chips ? { ...m, chips: null } : m)))
+    push({ from: 'user', text: clean })
+    handleText(clean)
+  }
+
+  // A chip click is answered like a user message; used chips disappear
+  function selectChip(option) {
+    setMessages((prev) => prev.map((m) => (m.chips ? { ...m, chips: null } : m)))
+    push({ from: 'user', text: option })
+    // Booking's module chips share this handler, so they're checked first
+    if (bookingRef.current.stage === 'awaitModule') return chooseModule(option)
+    const flow = flowRef.current
+    if (flow.stage === 'module') {
+      flow.module = option
+      if (flow.forceP1) return createTicket('P1')
+      flow.stage = 'urgency'
+      botSay({ text: botScripts.questions.collectUrgency, chips: botScripts.chips.collectUrgency })
+    } else if (flow.stage === 'urgency') {
+      createTicket(SEVERITY_BY_URGENCY[option] || 'P3')
+    } else if (option === botScripts.chips.didThisSolve[0]) {
+      botSay({ text: botScripts.resolved, variant: 'success' })
+    } else if (option === botScripts.chips.didThisSolve[1]) {
+      flowRef.current.stage = 'awaitDescription'
+      botSay({ text: botScripts.notSolved })
+    }
+  }
+
+  // Client submits the post-meeting review from inside the chat
+  function sendReview(apptId, review) {
+    setMessages((prev) => prev.map((m) => (m.reviewFor ? { ...m, reviewFor: null } : m)))
+    submitReview(apptId, 'client', review)
+    push({ from: 'user', text: `${'★'.repeat(review.stars)}${'☆'.repeat(5 - review.stars)} — review submitted` })
+    botSay({ text: botScripts.reviewThanks })
+  }
+
+  return { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot, sendReview }
+}
