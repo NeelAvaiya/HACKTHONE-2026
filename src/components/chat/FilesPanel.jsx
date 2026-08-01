@@ -72,7 +72,7 @@ export default function FilesPanel({ messages, emptyText, deleteLabel, onJump, o
               <div className="min-w-0 flex-1 leading-tight">
                 <p className="truncate text-[13.5px] font-medium text-[#111b21]">{att.name}</p>
                 <p className="text-[11px] text-[#667781]">
-                  {formatBytes(att.size)} · {m.from === 'user' ? 'You' : 'AI Syndicate'} · {m.time && formatClock(m.time)}
+                  {formatBytes(att.size)} · {m.from === 'user' ? 'You' : 'HelpSense'} · {m.time && formatClock(m.time)}
                 </p>
               </div>
               <button

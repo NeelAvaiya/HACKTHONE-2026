@@ -3,7 +3,7 @@
 // `hair` picks the silhouette variant; `src` is optional — set it to a file in
 // public/avatars/ (or any URL) to show a real picture for that person instead.
 export const profiles = {
-  'AI Syndicate': { color: '#00a884', hair: 'short' },
+  'HelpSense': { color: '#00a884', hair: 'short' },
   'Superworks Support': { color: '#7c3aed', hair: 'short' },
   'HR Announcements': { color: '#f59e0b', hair: 'long' },
   'Priya Nair': { color: '#0ea5e9', hair: 'long' },

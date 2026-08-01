@@ -13,6 +13,9 @@ import { uploadFile, deleteUpload, MAX_UPLOAD_BYTES } from '../utils/uploadFile.
 import { useTickets } from '../context/TicketContext.jsx'
 import { useBookings } from '../context/BookingContext.jsx'
 import { useReleases } from '../context/ReleaseContext.jsx'
+import { useWork } from '../context/WorkContext.jsx'
+import { undelivered, announcementKey } from '../utils/workStats.js'
+import { KIND_LABEL } from '../data/clientWork.js'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const thinkTime = () => 800 + Math.random() * 700
@@ -36,6 +39,7 @@ export function useChatBot() {
   const { tickets, addTicket } = useTickets()
   const { appointments, book, cancel, markNotified } = useBookings()
   const { releases, markNotified: markReleaseNotified } = useReleases()
+  const { items: workItems, markNotified: markWorkNotified } = useWork()
   const [messages, setMessages] = useState([
     // No bookCta here: a call is offered only after the help docs have failed to solve it
     { id: 1, from: 'bot', text: botScripts.greeting, time: new Date() },
@@ -52,8 +56,8 @@ export function useChatBot() {
   // `answered` stays true after we reply, so a later "still stuck" knows the docs
   // already had their turn and it is time to offer a call.
   const visionRef = useRef({ attachment: null, answered: false })
-  // State, not a ref: effects that must wait for the saved thread (release delivery)
-  // need a re-render once it has arrived
+  // State, not a ref: the effects that must wait for the saved thread (release and
+  // resolved-work delivery) need a re-render once it has arrived
   const [loaded, setLoaded] = useState(false)
   // Language the client is writing in, updated only by typed messages that carry
   // a signal. Chip taps and bare replies like "9" leave it alone, so a Hindi
@@ -125,6 +129,33 @@ export function useChatBot() {
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [releases, loaded])
+
+  // Tickets and feature requests: support resolves one, or sends one back, and
+  // the client hears about it here. A reopen by the client is not announced —
+  // they did it themselves.
+  const workDeliveredRef = useRef(new Set())
+  useEffect(() => {
+    // Wait for the saved thread: work items land from /api/work quickly, and
+    // announcing before the thread arrives would push a message that
+    // setMessages(saved) then throws away.
+    if (!loaded) return
+    undelivered(workItems)
+      .filter((i) => !workDeliveredRef.current.has(announcementKey(i)))
+      .forEach((item) => {
+        workDeliveredRef.current.add(announcementKey(item))
+        markWorkNotified(item.id)
+        const template = item.status === 'done' ? botScripts.workResolvedMsg : botScripts.workReopenedMsg
+        push({
+          from: 'bot',
+          text: template
+            .replaceAll('{kind}', KIND_LABEL[item.kind] || 'request')
+            .replaceAll('{id}', item.id)
+            .replaceAll('{title}', item.title)
+            .replaceAll('{reason}', item.reopen?.reason || ''),
+        })
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workItems, loaded])
 
   async function botSay(fields) {
     setIsTyping(true)

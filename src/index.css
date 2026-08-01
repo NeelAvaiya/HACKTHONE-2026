@@ -7,6 +7,89 @@ body {
   @apply bg-slate-50 text-slate-900 antialiased;
 }
 
+/* ── Dark theme ──────────────────────────────────────────────────────────────
+   The app was written light-first with literal utilities (bg-white,
+   text-slate-900, …) across ~30 files. Rather than add a `dark:` variant to
+   every one of them, the light end of the palette is re-pointed here.
+
+   The dark end is deliberately NOT touched: `bg-slate-900 + text-white` (the
+   sidebar, the active tab pills, card headers) already reads correctly on a
+   dark page, and inverting the ramp would break all twelve of them.
+
+   Specificity does the work — `.dark .bg-white` (0,2,0) beats `.bg-white`.
+   These rules sit after the Tailwind layers so source order agrees too. */
+
+.dark body {
+  background-color: #0f1216;
+  color: #e6e8eb;
+}
+
+/* Surfaces */
+.dark .bg-white { background-color: #171a1f; }
+.dark .bg-white\/90 { background-color: rgba(23, 26, 31, 0.9); }
+.dark .bg-white\/95 { background-color: rgba(23, 26, 31, 0.95); }
+.dark .bg-slate-50 { background-color: #1c2027; }
+.dark .bg-slate-50\/40 { background-color: rgba(28, 32, 39, 0.4); }
+.dark .bg-slate-100 { background-color: #222731; }
+.dark .bg-slate-200 { background-color: #2b303a; }
+
+/* Text */
+.dark .text-slate-900 { color: #e6e8eb; }
+.dark .text-slate-700 { color: #c8ccd4; }
+.dark .text-slate-600 { color: #aab1bd; }
+.dark .text-slate-500 { color: #8d95a3; }
+.dark .text-slate-400 { color: #79818f; }
+/* text-slate-300 is deliberately NOT remapped: it is the light text on the dark
+   sidebar and card headers as well as a muted tone on light cards. Darkening it
+   would make the sidebar unreadable; left alone it stays legible in both. */
+
+/* Lines */
+.dark .border-slate-100 { border-color: #23272f; }
+.dark .border-slate-200 { border-color: #2b303a; }
+.dark .border-slate-300 { border-color: #363c47; }
+.dark .ring-slate-200 { --tw-ring-color: #2b303a; }
+.dark .border-black\/5 { border-color: rgba(255, 255, 255, 0.06); }
+.dark .border-black\/10 { border-color: rgba(255, 255, 255, 0.08); }
+.dark .ring-black\/5 { --tw-ring-color: rgba(255, 255, 255, 0.08); }
+
+/* Hover states that assume a light surface */
+.dark .hover\:bg-slate-50:hover { background-color: #1c2027; }
+.dark .hover\:bg-slate-100:hover { background-color: #222731; }
+.dark .hover\:bg-white:hover { background-color: #1f232a; }
+
+/* Tinted panels: keep the hue, drop the brightness */
+.dark .bg-blue-50 { background-color: #16233a; }
+.dark .bg-emerald-50 { background-color: #10291f; }
+.dark .bg-emerald-50\/40 { background-color: rgba(16, 41, 31, 0.5); }
+.dark .bg-emerald-50\/50 { background-color: rgba(16, 41, 31, 0.6); }
+.dark .bg-amber-50 { background-color: #33270f; }
+.dark .bg-red-50 { background-color: #351a1a; }
+.dark .bg-violet-50 { background-color: #241a3a; }
+.dark .text-blue-700 { color: #8ab4f8; }
+.dark .text-emerald-700 { color: #5ddba4; }
+.dark .text-amber-700 { color: #f0c05a; }
+.dark .text-red-700 { color: #f38b82; }
+.dark .border-emerald-200 { border-color: #1f4b38; }
+.dark .border-amber-200 { border-color: #4d3a15; }
+.dark .border-red-200 { border-color: #4d2626; }
+.dark .border-red-300 { border-color: #5c2f2f; }
+.dark .border-blue-300 { border-color: #2c4a7c; }
+.dark .border-emerald-500 { border-color: #10b981; }
+
+/* WhatsApp chrome: the chat pages use literal WhatsApp hexes, mapped here to
+   WhatsApp's own dark palette rather than to greys */
+.dark .bg-\[\#f0f2f5\] { background-color: #202c33; }
+.dark .bg-\[\#f5f6f6\] { background-color: #202c33; }
+.dark .hover\:bg-\[\#f0f2f5\]:hover { background-color: #202c33; }
+.dark .hover\:bg-\[\#f5f6f6\]:hover { background-color: #202c33; }
+.dark .text-\[\#111b21\] { color: #e9edef; }
+.dark .text-\[\#667781\] { color: #8696a0; }
+.dark .text-\[\#54656f\] { color: #aebac1; }
+.dark .text-\[\#3b4a54\] { color: #d1d7db; }
+.dark .hover\:text-\[\#3b4a54\]:hover { color: #d1d7db; }
+.dark .bg-\[\#d9fdd3\] { background-color: #005c4b; }
+.dark .bg-\[\#ffeecd\] { background-color: #3a2f1c; }
+
 /* Pop-in for the resolved ✅ check in chat */
 @keyframes pop {
   0% { transform: scale(0); }
@@ -54,6 +137,19 @@ body {
   height: 0;
   border-right: 7px solid #ffffff;
   border-bottom: 7px solid transparent;
+}
+
+/* Dark chat surface: WhatsApp's own dark wallpaper, and bubble tails recoloured
+   to match their bubbles — a tail is a border triangle, not a background */
+.dark .wa-doodle {
+  background-color: #0b141a;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cg fill='none' stroke='%231d2b33' stroke-width='1.5' opacity='0.9'%3E%3Ccircle cx='20' cy='24' r='6'/%3E%3Cpath d='M90 20 l10 10 M100 20 l-10 10'/%3E%3Crect x='60' y='70' width='12' height='12' rx='3'/%3E%3Cpath d='M20 100 q6 -10 12 0 t12 0'/%3E%3Ccircle cx='120' cy='110' r='5'/%3E%3Cpath d='M40 44 h10'/%3E%3C/g%3E%3C/svg%3E");
+}
+.dark .wa-tail-out::after {
+  border-left-color: #005c4b;
+}
+.dark .wa-tail-in::after {
+  border-right-color: #171a1f;
 }
 
 /* Emoji panel pop-up from the input bar */

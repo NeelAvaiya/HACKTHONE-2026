@@ -45,7 +45,7 @@ const HINDI_WORDS = new Set([
 const PRODUCT_NOUNS = new Set([
   'payroll', 'payslip', 'payslips', 'hrms', 'pms', 'login', 'logout', 'app', 'sso', 'pf', 'hr',
   'attendance', 'leave', 'salary', 'ticket', 'report', 'admin', 'export', 'pdf', 'email', 'link',
-  'superworks', 'ai', 'syndicate', 'demo', 'slot', 'ok', 'okay',
+  'superworks', 'ai', 'helpsense', 'demo', 'slot', 'ok', 'okay',
 ])
 
 const tokenize = (text) =>

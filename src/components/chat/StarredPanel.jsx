@@ -23,7 +23,7 @@ export default function StarredPanel({ messages, emptyText, onJump, onToggleStar
           <li key={m.id} className="rounded-lg bg-white p-3 shadow-sm">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8696a0]">
-                {m.from === 'user' ? 'You' : 'AI Syndicate'} · {m.time && formatClock(m.time)}
+                {m.from === 'user' ? 'You' : 'HelpSense'} · {m.time && formatClock(m.time)}
               </p>
               <div className="flex shrink-0 items-center">
                 <button

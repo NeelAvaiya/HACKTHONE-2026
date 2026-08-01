@@ -1,7 +1,7 @@
 // ALL bot dialogue lives here — intents, keywords, responses, follow-ups. Edit copy here, never in JSX.
 export const botScripts = {
   greeting:
-    "Hi! I'm AI Syndicate 👋 I can fix common issues instantly, raise a ticket for you, or set up a call with our team. What's going on?",
+    "Hi! I'm HelpSense 👋 I can fix common issues instantly, raise a ticket for you, or set up a call with our team. What's going on?",
 
   intents: [
     {
@@ -61,7 +61,7 @@ export const botScripts = {
 
   // Identity strip at the top of the chat pane
   persona: {
-    name: 'AI Syndicate',
+    name: 'HelpSense',
     role: 'Senior. Support Specialist',
     status: 'Online - Clock In',
     typing: 'typing…',
@@ -138,7 +138,7 @@ export const botScripts = {
   },
 
   // Chat window banner
-  banner: '🌙 Support hours: 9 AM – 6 PM IST · Currently OFF-HOURS · AI Syndicate is online',
+  banner: '🌙 Support hours: 9 AM – 6 PM IST · Currently OFF-HOURS · HelpSense is online',
 
   // Caption for the fake screenshot placeholder in the self-resolve reply
   screenshotCaption: 'Screenshot: My Payroll → Payslips → ⬇ PDF',
@@ -188,10 +188,6 @@ export const botScripts = {
     ],
   },
 
-  // Support inbox duplicate-booking demo ({id}/{client} filled at render time)
-  apptDuplicateBanner: '⚠ Same question detected — 94% match with {id}. {client} raised this exact issue too. Merge them?',
-  apptMergeToast: '✅ Merged into one ticket! Both clients are now linked to the same resolution thread — zero duplicate effort.',
-
   // Post-meeting review form (asked on BOTH sides after the summary)
   reviewIntro: 'Your feedback matters! 🙏 A quick 10-second review, please:',
   reviewQuestions: [
@@ -213,10 +209,58 @@ export const botScripts = {
   reviewBackSupport: 'Back to inbox',
   reviewsTabEmpty: 'No completed meetings yet. Reviews appear here after a call is marked done.',
 
+  // Client-side "My requests" + support-side "Client work" (static demo data)
+  requestsTitle: 'My requests',
+  requestsIntro: 'Every ticket and feature request you have raised, and where each one stands.',
+  clientWorkTitle: 'Client work — Rohit Verma (FinEdge Solutions)',
+  clientWorkIntro: 'Everything this client has open right now.',
+  clientWorkHint: 'Marking an item resolved sends the client a message in their chat straight away.',
+  workDoneLabel: 'Mark resolved',
+  workReopenLabel: 'Reopen',
+  reopenPrompt: 'Why does this need reopening?',
+  reopenPlaceholder: 'Describe what is still wrong — the other side sees this.',
+  reopenSubmit: 'Reopen with this note',
+  reopenSubmitting: 'Reopening…',
+  reopenCancel: 'Cancel',
+  reopenFailed: "Couldn't reopen it just now. Please try again.",
+  reopenBy: { client: 'Reopened by the client', support: 'Reopened by support' },
+
+  // The Announcements group in the client's chat list — where resolutions land.
+  // These read as messages, not table rows: a headline, the thing it refers to,
+  // and what happens next.
+  announce: {
+    name: 'Announcements',
+    subtitle: 'Updates on your tickets and requests',
+    empty: 'Nothing yet. When support resolves one of your tickets or requests, it shows up here.',
+    preview: 'No updates yet',
+    reasonLabel: 'Reason',
+    chipResolved: 'Resolved',
+    chipReopened: 'Reopened',
+    // {kind} = ticket / feature request · {id} · {title} · {module}
+    resolved: {
+      headline: '✅ Your {kind} {id} is done',
+      note: 'Marked resolved by the Superworks {module} team. If it still looks wrong, reopen it from My Requests and tell us what is happening.',
+    },
+    reopenedBySupport: {
+      headline: '🔄 We have reopened your {kind} {id}',
+      note: 'Our team is taking another look. You will get an update here as soon as it moves.',
+    },
+    reopenedByClient: {
+      headline: '🔄 You reopened your {kind} {id}',
+      note: 'It is back with the {module} team. They will pick it up and update you here.',
+    },
+  },
+  // Sent to the client's chat when SUPPORT reopens — they need telling; when the
+  // client reopens it themselves there is nothing to announce.
+  workReopenedMsg:
+    '🔄 Your {kind} **{id}** has been reopened by our team.\n\n"{title}"\n\nReason: {reason}',
+  // {kind} = ticket / feature request, filled in at send time
+  workResolvedMsg: '✅ Good news — your {kind} **{id}** is resolved.\n\n"{title}"\n\nIf it still looks wrong, just reply here and I will reopen it.',
+
   // Client-side "My meetings" page
   meetingsIntro: 'Your booked calls, and the summary and review for each one once it is done.',
   meetingsEmpty: 'No completed meetings yet. After a call, the summary and your review appear here.',
-  reviewThanks: 'Thank you for the feedback! ⭐ It helps us make AI Syndicate better.',
+  reviewThanks: 'Thank you for the feedback! ⭐ It helps us make HelpSense better.',
 
   // When the help docs don't cover a question → route to appointment booking
   notCovered:
@@ -229,19 +273,19 @@ export const botScripts = {
   // other string in this file stays English; only replies mirror.
   smallTalk: {
     en: {
-      greeting: "Hi! I'm AI Syndicate, your Superworks support assistant. What can I help you with?",
+      greeting: "Hi! I'm HelpSense, your Superworks support assistant. What can I help you with?",
       howAreYou: "Doing well, thanks for asking! I'm here whenever you need help with Superworks.",
       thanks: 'Happy to help! Anything else I can look at?',
       bye: 'Take care! Message me any time you need a hand.',
     },
     hi: {
-      greeting: 'Namaste! Main AI Syndicate hoon, aapka Superworks sahayak. Bataiye, kaise madad karoon?',
+      greeting: 'Namaste! Main HelpSense hoon, aapka Superworks sahayak. Bataiye, kaise madad karoon?',
       howAreYou: 'Main bilkul theek hoon, poochne ke liye dhanyavaad! Aapki madad ke liye main yahin hoon.',
       thanks: 'Madad karke khushi hui! Aur kuch dekhoon?',
       bye: 'Apna dhyan rakhiye! Jab bhi zaroorat ho, sandesh bhej dijiye.',
     },
     hinglish: {
-      greeting: 'Hi! Main AI Syndicate hoon, aapka Superworks support assistant. Bataiye, kaise help karoon?',
+      greeting: 'Hi! Main HelpSense hoon, aapka Superworks support assistant. Bataiye, kaise help karoon?',
       howAreYou: 'Main bilkul theek hoon, poochne ke liye thanks! Kisi bhi help ke liye main yahin hoon.',
       thanks: 'Khushi hui help karke! Aur kuch dekhoon?',
       bye: 'Apna dhyan rakhiye! Kabhi bhi zaroorat ho to message kar dijiye.',

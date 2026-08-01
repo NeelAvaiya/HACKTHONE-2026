@@ -13,6 +13,8 @@ import MeetingRoom from './pages/MeetingRoom.jsx'
 import ReviewPage from './pages/ReviewPage.jsx'
 import ClientMeetings from './pages/ClientMeetings.jsx'
 import AutoAssign from './pages/AutoAssign.jsx'
+import ClientRequests from './pages/ClientRequests.jsx'
+import SupportClientWork from './pages/SupportClientWork.jsx'
 
 export default function App() {
   const location = useLocation()
@@ -26,10 +28,12 @@ export default function App() {
             <Route path="chat" element={<Chat />} />
             <Route path="meetings" element={<ClientMeetings />} />
             <Route path="auto-assign" element={<AutoAssign />} />
+            <Route path="requests" element={<ClientRequests />} />
           </Route>
           <Route path="/support" element={<Support />}>
             <Route index element={<SupportInbox />} />
             <Route path="calendar" element={<SupportCalendar />} />
+            <Route path="client-work" element={<SupportClientWork />} />
             {/* Reviews live in the Dashboard now — one place shows both sides */}
             <Route path="reviews" element={<Navigate to="/support/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
