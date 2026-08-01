@@ -118,6 +118,22 @@ function offersForDay(candidates, dayIdx, appts, requestedTime, category) {
   return offers
 }
 
+/**
+ * Every open time on one day, each with the least-loaded expert attached.
+ * Unlike offersForDay this is not capped and does not spread across experts —
+ * it backs the day-grid the client picks from, where only the time is shown.
+ */
+function slotsForDay(candidates, dayIdx, appts, category) {
+  return timeSlots
+    .map((time) => {
+      const free = candidates.filter((m) => isFree(m, dayIdx, time, appts))
+      if (!free.length) return null
+      const pick = bestExpert(free, dayIdx, appts)
+      return { time, person: pick.name, category: category || pick.categories?.[0] || 'Other' }
+    })
+    .filter(Boolean)
+}
+
 /** Full availability answer, rolling forward up to SEARCH_DAYS if a day is full. */
 export async function computeAvailability({ category, dayIdx = 0, time = null }) {
   const [teamList, appts] = await Promise.all([loadTeam(), loadAppointments()])
@@ -143,10 +159,20 @@ export async function computeAvailability({ category, dayIdx = 0, time = null })
       inHours,
       exact,
       alternatives: offers,
+      slots: slotsForDay(candidates, d, appts, category),
       ...(d !== dayIdx ? { rolledToDay: d } : {}),
     }
   }
-  return { day: dayIdx, date: dateForDay(dayIdx), dayLabel: dayLabel(dayIdx), requested, inHours, exact, alternatives: [] }
+  return {
+    day: dayIdx,
+    date: dateForDay(dayIdx),
+    dayLabel: dayLabel(dayIdx),
+    requested,
+    inHours,
+    exact,
+    alternatives: [],
+    slots: [],
+  }
 }
 
 // ── routes ───────────────────────────────────────────────────────────────────
@@ -158,6 +184,20 @@ availability.get('/team', async (req, res) => {
 availability.get('/availability', async (req, res) => {
   const dayIdx = Math.max(0, parseInt(req.query.day, 10) || 0)
   res.json(await computeAvailability({ category: req.query.category || null, dayIdx, time: req.query.time || null }))
+})
+
+// One exact day, no rolling forward: what the client sees after picking a date.
+availability.get('/availability/day', async (req, res) => {
+  const dayIdx = Math.max(0, parseInt(req.query.day, 10) || 0)
+  const category = req.query.category || null
+  const [teamList, appts] = await Promise.all([loadTeam(), loadAppointments()])
+  const candidates = category ? teamList.filter((m) => m.categories?.includes(category)) : teamList
+  res.json({
+    day: dayIdx,
+    date: dateForDay(dayIdx),
+    dayLabel: dayLabel(dayIdx),
+    slots: slotsForDay(candidates, dayIdx, appts, category),
+  })
 })
 
 async function nextId() {
@@ -179,7 +219,14 @@ availability.post('/appointments/book', async (req, res) => {
   const appts = await loadAppointments()
   if (!timeSlots.includes(slotTime) || !isFree(member, dayIdx, slotTime, appts)) {
     const fresh = await computeAvailability({ category: category || member.categories?.[0], dayIdx, time: slotTime })
-    return res.status(409).json({ error: 'taken', alternatives: fresh.alternatives, dayLabel: fresh.dayLabel })
+    return res.status(409).json({
+      error: 'taken',
+      alternatives: fresh.alternatives,
+      slots: fresh.slots,
+      day: fresh.day,
+      date: fresh.date,
+      dayLabel: fresh.dayLabel,
+    })
   }
 
   const appt = {

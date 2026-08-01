@@ -43,7 +43,10 @@ export function BookingProvider({ children }) {
         body: JSON.stringify({ dayIdx, time, person, category }),
       })
       const data = await r.json()
-      if (r.status === 409) return { conflict: true, alternatives: data.alternatives || [] }
+      if (r.status === 409) {
+        const { alternatives = [], slots = [], day, date, dayLabel } = data
+        return { conflict: true, alternatives, slots, day, date, dayLabel }
+      }
       if (!r.ok) return null
       setAppointments((prev) => [data, ...prev])
       return data

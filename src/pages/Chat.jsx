@@ -14,7 +14,17 @@ const otherChats = [
 ]
 
 export default function Chat() {
-  const { messages, isTyping, toast, sendMessage, selectChip, pickOffer, startBooking, changeSlot } = useChatBot()
+  const {
+    messages,
+    isTyping,
+    toast,
+    sendMessage,
+    selectChip,
+    pickOffer,
+    changeOfferDay,
+    startBooking,
+    changeSlot,
+  } = useChatBot()
   const last = messages[messages.length - 1]
   const [search, setSearch] = useState('')
   const q = search.trim().toLowerCase()
@@ -86,11 +96,13 @@ export default function Chat() {
             onSend={sendMessage}
             onChipSelect={selectChip}
             onOfferPick={pickOffer}
+            onOfferDayChange={changeOfferDay}
             onBookStart={startBooking}
             onChangeSlot={changeSlot}
             bookCtaLabel={botScripts.bookCtaLabel}
             changeSlotLabel={botScripts.booking.changeSlot}
             reviewCtaLabel={botScripts.reviewCtaLabel}
+            dayErrorLabel={botScripts.booking.dayFailed}
           />
         </section>
       </div>

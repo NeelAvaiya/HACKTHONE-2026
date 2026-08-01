@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "node server/index.js",
+    "seed": "node server/seed.js",
     "chat": "node server/test-chat.js",
     "test:slots": "node server/test-parse-slot.js",
     "test:booking": "node server/test-booking.js",

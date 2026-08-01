@@ -90,6 +90,7 @@ export const botScripts = {
     unavailable: "I couldn't reach the calendar just now. Please try again in a moment.",
     failed: "The booking didn't go through. Please try again in a moment.",
     changeSlot: 'Change slot',
+    dayFailed: "Couldn't load that day — tap the day again to retry.",
   },
 
   // Dashboard duplicate-detection copy ({id}/{name} filled in at render time)
