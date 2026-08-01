@@ -1,5 +1,5 @@
 // Checks for the review aggregation: npm run test:reviews (no server needed)
-import { reviewStats, bothReviewed, pendingReviews } from '../src/utils/reviewStats.js'
+import { reviewStats, isReviewed, pendingReviews } from '../src/utils/reviewStats.js'
 import { meetingSummary, meetingSummaryText } from '../src/utils/meetingSummary.js'
 
 let failed = 0
@@ -19,36 +19,39 @@ check('empty list does not divide by zero', empty.average === 0, String(empty.av
 check('undefined input is handled', reviewStats().average === 0)
 check('non-array input is handled', reviewStats(null).total === 0)
 
-// Only one side has reviewed
-const oneSide = reviewStats([appt('A', 'done', { client: review(4) })])
-check('one-sided review counts as awaiting', oneSide.awaiting === 1 && oneSide.reviewed === 0)
-check('one-sided review still counts toward the average', oneSide.average === 4, String(oneSide.average))
+// Reviews are one-way: a client review is the whole story
+const one = reviewStats([appt('A', 'done', { client: review(4) })])
+check('a client review counts as reviewed', one.reviewed === 1 && one.awaiting === 0)
+check('the client rating is the average', one.average === 4, String(one.average))
 
-// Both sides
-const both = reviewStats([appt('A', 'done', { client: review(4), support: review(5) })])
-check('both sides counts as reviewed', both.reviewed === 1 && both.awaiting === 0)
-check('average pools both sides', both.average === 4.5, String(both.average))
+// A stray support review must be ignored entirely, not averaged in. Old rows in
+// the database still carry one, and it must not move the numbers.
+const stray = reviewStats([appt('A', 'done', { support: review(1) })])
+check('a support-only review does not count as reviewed', stray.reviewed === 0 && stray.awaiting === 1)
+check('a support rating is excluded from the average', stray.average === 0, String(stray.average))
+const mixedSides = reviewStats([appt('A', 'done', { client: review(4), support: review(1) })])
+check('a legacy support rating never drags the average', mixedSides.average === 4, String(mixedSides.average))
 
 // Averaging across appointments, rounded to one decimal
 const many = reviewStats([
-  appt('A', 'done', { client: review(5), support: review(4) }),
-  appt('B', 'done', { client: review(3) }),
-  appt('C', 'done', { client: review(4), support: review(4) }),
+  appt('A', 'done', { client: review(5) }),
+  appt('B', 'done', undefined),
+  appt('C', 'done', { client: review(4) }),
 ])
 check('counts across appointments', many.total === 3 && many.reviewed === 2 && many.awaiting === 1)
-// (5 + 4 + 3 + 4 + 4) / 5 = 4
-check('average across appointments', many.average === 4, String(many.average))
+check('average across appointments', many.average === 4.5, String(many.average))
 
 // Rounding: (5 + 4 + 4) / 3 = 4.333... -> 4.3
 const rounded = reviewStats([
-  appt('A', 'done', { client: review(5), support: review(4) }),
+  appt('A', 'done', { client: review(5) }),
   appt('B', 'done', { client: review(4) }),
+  appt('C', 'done', { client: review(4) }),
 ])
 check('average rounds to one decimal', rounded.average === 4.3, String(rounded.average))
 
 // Upcoming meetings are not reviewable and must be excluded entirely
 const mixed = reviewStats([
-  appt('A', 'done', { client: review(5), support: review(5) }),
+  appt('A', 'done', { client: review(5) }),
   appt('B', 'upcoming', undefined),
   appt('C', 'upcoming', undefined),
 ])
@@ -59,20 +62,20 @@ const none = reviewStats([appt('A', 'done', undefined)])
 check('done with no reviews is awaiting', none.awaiting === 1 && none.reviewed === 0)
 check('done with no reviews keeps average at 0', none.average === 0)
 
-check('bothReviewed is true only with both', bothReviewed(appt('A', 'done', { client: review(4), support: review(4) })))
-check('bothReviewed is false with one', !bothReviewed(appt('A', 'done', { client: review(4) })))
-check('bothReviewed handles undefined', !bothReviewed(undefined))
+check('isReviewed is true with a client review', isReviewed(appt('A', 'done', { client: review(4) })))
+check('isReviewed ignores a support review', !isReviewed(appt('A', 'done', { support: review(4) })))
+check('isReviewed is false with none', !isReviewed(appt('A', 'done', undefined)))
+check('isReviewed handles undefined', !isReviewed(undefined))
 
 // pendingReviews — what the "My Meetings" badge counts
 const list = [
-  appt('A', 'done', { client: review(4), support: review(5) }), // nothing pending
-  appt('B', 'done', { support: review(5) }), // client still owes one
-  appt('C', 'done', undefined), // both owe one
+  appt('A', 'done', { client: review(4) }), // nothing pending
+  appt('B', 'done', { support: review(5) }), // a legacy support review is not the client's
+  appt('C', 'done', undefined), // the client still owes one
   appt('D', 'upcoming', undefined), // not reviewable yet
 ]
-check('pending client reviews', pendingReviews(list, 'client').map((a) => a.id).join(',') === 'B,C')
-check('pending support reviews', pendingReviews(list, 'support').map((a) => a.id).join(',') === 'C')
-check('defaults to the client side', pendingReviews(list).length === 2)
+check('pending client reviews', pendingReviews(list).map((a) => a.id).join(',') === 'B,C')
+check('a support review does not clear the client badge', pendingReviews(list).some((a) => a.id === 'B'))
 check('upcoming meetings are never pending', !pendingReviews(list).some((a) => a.id === 'D'))
 check('empty list gives none', pendingReviews([]).length === 0)
 check('undefined input gives none', pendingReviews().length === 0)

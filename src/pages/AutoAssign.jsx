@@ -1,4 +1,4 @@
-// "/auto-assign" — client-side preview of automatic reassignment.
+// "/support/auto-assign" — support-side preview of automatic reassignment.
 // Static data only: this page never reads or writes real appointments.
 import { Sparkles } from 'lucide-react'
 import { autoAssignDemo, autoAssignCopy } from '../data/autoAssignDemo.js'

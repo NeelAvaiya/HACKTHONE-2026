@@ -18,6 +18,8 @@
     "test:work": "node server/test-work-stats.js",
     "test:workapi": "node server/test-work-api.js",
     "test:announce": "node server/test-announcements.js",
+    "test:questions": "node server/test-client-questions.js",
+    "test:tabs": "node server/test-tabs.js",
     "dev:all": "concurrently -n web,api -c blue,green \"npm run dev\" \"npm run server\"",
     "build": "vite build",
     "preview": "vite preview"

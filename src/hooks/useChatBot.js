@@ -7,6 +7,8 @@ import { parseSlot, looksLikeBooking } from '../utils/parseSlot.js'
 import { matchModule, MODULE_CHIPS } from '../utils/matchModule.js'
 import { resolveLanguage } from '../utils/detectLanguage.js'
 import { meetingSummaryText } from '../utils/meetingSummary.js'
+import { clientQuestions } from '../utils/clientQuestions.js'
+import { currentUser } from '../data/currentUser.js'
 import { askGemini } from '../utils/askGemini.js'
 import { askVision } from '../utils/askVision.js'
 import { uploadFile, deleteUpload, MAX_UPLOAD_BYTES } from '../utils/uploadFile.js'
@@ -188,7 +190,7 @@ export function useChatBot() {
     const ticket = {
       id: `SUP-${Math.max(1042, ...nums) + 1}`,
       title: flow.description.length > 60 ? flow.description.slice(0, 57) + '…' : flow.description,
-      client: 'Nexara Tech',
+      client: currentUser.company,
       module: flow.module,
       severity,
       status: 'Open',
@@ -357,6 +359,11 @@ export function useChatBot() {
       time: offer.time,
       person: offer.person,
       category: flow.category || offer.category,
+      // Snapshot the questions now: the flow is reset a few lines down, and the
+      // expert's brief should reflect what was asked before this booking, not
+      // whatever the client types while waiting for the call.
+      questions: clientQuestions(logRef.current),
+      client: currentUser.label,
     })
     setIsTyping(false)
 

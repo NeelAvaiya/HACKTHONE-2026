@@ -89,6 +89,33 @@ body {
 .dark .hover\:text-\[\#3b4a54\]:hover { color: #d1d7db; }
 .dark .bg-\[\#d9fdd3\] { background-color: #005c4b; }
 .dark .bg-\[\#ffeecd\] { background-color: #3a2f1c; }
+/* Files and Starred panels sit where the chat wallpaper would be, so they take
+   the same dark surface — otherwise the tab switches from a dark thread to a
+   white slab */
+.dark .bg-\[\#f7f8fa\] { background-color: #0b141a; }
+
+/* The 100/600 pastel pairs: file-type chips in the Files list, severity badges,
+   release-note chips, the auto-assign cards. On a dark surface the light fill
+   glares and the mid-tone text goes flat, so each gets a deep fill with a
+   lifted foreground. The matching rings come with them — a light ring around a
+   dark chip reads as a rendering fault. */
+.dark .bg-red-100 { background-color: #3b1e1e; }
+.dark .bg-blue-100 { background-color: #1a2b45; }
+.dark .bg-green-100 { background-color: #14301f; }
+.dark .bg-emerald-100 { background-color: #14301f; }
+.dark .bg-amber-100 { background-color: #3a2c12; }
+.dark .bg-purple-100 { background-color: #291d3d; }
+.dark .bg-pink-100 { background-color: #3a1c2b; }
+.dark .text-red-600 { color: #f38b82; }
+.dark .text-blue-600 { color: #8ab4f8; }
+.dark .text-green-700 { color: #6cd39a; }
+.dark .text-purple-600 { color: #c3a6f0; }
+.dark .text-pink-600 { color: #f191b8; }
+.dark .ring-red-200 { --tw-ring-color: #4d2626; }
+.dark .ring-amber-200 { --tw-ring-color: #4d3a15; }
+.dark .ring-blue-200 { --tw-ring-color: #2c4a7c; }
+.dark .ring-emerald-200 { --tw-ring-color: #1f4b38; }
+.dark .ring-violet-200 { --tw-ring-color: #3b2a63; }
 
 /* Pop-in for the resolved ✅ check in chat */
 @keyframes pop {
